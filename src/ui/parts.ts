@@ -57,6 +57,10 @@ export const empty = (text: string, ...extra: Child[]) => h('div', { class: 'emp
 
 export const section = (title: string, ...children: Child[]) => h('section', { class: 'section' }, h('h2', null, title), ...children);
 
+/** Igual que `section`, con una clase para acomodarla en la distribución de su pantalla. */
+export const bloque = (clase: string, title: string, ...children: Child[]) =>
+  h('section', { class: `section ${clase}` }, h('h2', null, title), ...children);
+
 export function copyButton(text: string, label = 'Copiar'): HTMLButtonElement {
   const btn = h('button', { class: 'btn btn-small', type: 'button' }, label);
   btn.addEventListener('click', async () => {

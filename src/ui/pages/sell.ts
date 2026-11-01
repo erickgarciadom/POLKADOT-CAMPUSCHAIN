@@ -4,7 +4,7 @@ import type { Producto } from '../../shared/types';
 import type { Ctx } from '../context';
 import { deleteButton } from '../deleteProduct';
 import { h } from '../dom';
-import { empty, section } from '../parts';
+import { bloque, empty } from '../parts';
 import { orderList } from './orders';
 
 const PICKUP_POINTS = ['Biblioteca', 'Explanada', 'Cafetería', 'Entrada principal', 'Facultad de Ingeniería'];
@@ -19,12 +19,12 @@ export async function sellPage(ctx: Ctx): Promise<HTMLElement> {
 
   return h('div', null,
     h('h1', null, 'Vender'),
-    section('Pedidos recibidos', orderList(ctx, orders, 'Todavía no recibes pedidos.')),
-    section('Mis productos', products.length
+    bloque('recibidos', 'Pedidos recibidos', orderList(ctx, orders, 'Todavía no recibes pedidos.')),
+    bloque('mis-productos', 'Mis productos', products.length
       ? h('div', { class: 'list' }, ...products.map((p) => productRow(ctx, p)))
       : empty('Todavía no publicas productos.')),
-    section('Publicar producto', publishForm(ctx)),
-    h('p', { class: 'muted small' }, 'Todo lo que publicas queda en un contrato público. No pongas tu nombre completo, teléfono ni dirección: usa un punto general del campus.'),
+    bloque('publicar', 'Publicar producto', publishForm(ctx)),
+    h('p', { class: 'muted small aviso-publico' }, 'Todo lo que publicas queda en un contrato público. No pongas tu nombre completo, teléfono ni dirección: usa un punto general del campus.'),
   );
 }
 

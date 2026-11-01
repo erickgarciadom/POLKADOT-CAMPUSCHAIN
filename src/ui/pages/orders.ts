@@ -4,7 +4,7 @@ import { CAMINO, meToca, opcionesPedido, type OpcionPedido } from '../../shared/
 import type { Direccion, Orden } from '../../shared/types';
 import type { Ctx } from '../context';
 import { h, replace } from '../dom';
-import { empty, estadoBadge, explorerTx, external, personLink, section } from '../parts';
+import { bloque, empty, estadoBadge, explorerTx, external, personLink } from '../parts';
 
 /** «Pedido 0x1a2b…9f0e»: el id es un bytes32, demasiado largo para mostrarlo entero. */
 export const orderLabel = (id: string) => `Pedido ${shortAddress(id)}`;
@@ -65,7 +65,7 @@ export async function orderPage(ctx: Ctx, id: Direccion): Promise<HTMLElement> {
 
   const actions = opcionesPedido(o, ctx.me);
   const actionCard = actions.length
-    ? h('div', { class: 'card card-accent' },
+    ? h('div', { class: 'card card-accent accion' },
       h('h2', null, 'Te toca'),
       ...actions.map((a) => h('div', { class: 'action' },
         h('button', { class: `btn btn-block ${a.peligro ? 'btn-danger' : 'btn-primary'}`, onclick: () => act(a) }, a.etiqueta),
@@ -110,7 +110,7 @@ export async function orderPage(ctx: Ctx, id: Direccion): Promise<HTMLElement> {
 
   return h('div', null,
     h('a', { class: 'back', href: ctx.me && o.vendedor.toLowerCase() === ctx.me.toLowerCase() ? '#/vender' : '#/pedidos' }, '← Pedidos'),
-    h('div', { class: 'card' },
+    h('div', { class: 'card resumen' },
       h('div', { class: 'product-top' }, h('span', { class: 'muted mono' }, orderLabel(o.orderId)), estadoBadge(o.estado)),
       h('h1', null, h('a', { href: `#/p/${producto.id}` }, producto.titulo)),
       progressBar(o),
@@ -126,8 +126,8 @@ export async function orderPage(ctx: Ctx, id: Direccion): Promise<HTMLElement> {
         : null,
     ),
     actionCard,
-    section('Historial en la blockchain', timeline),
-    section('Verificar el pedido',
+    bloque('historial', 'Historial en la blockchain', timeline),
+    bloque('verificar', 'Verificar el pedido',
       h('p', { class: 'muted small' }, 'La app recalcula el hash con los datos que guarda el contrato (id del pedido, producto, cantidad, total, comprador y vendedor) y le pregunta al contrato si es el que quedó registrado al crearlo.'),
       h('button', { class: 'btn', onclick: verify }, 'Verificar hash'),
       verifyOut,

@@ -104,7 +104,7 @@ export async function productPage(ctx: Ctx, id: string): Promise<HTMLElement> {
 
   return h('div', null,
     h('a', { class: 'back', href: '#/' }, '← Catálogo'),
-    h('div', { class: 'card' },
+    h('div', { class: 'card ficha' },
       h('div', { class: 'product-top' },
         h('span', { class: 'chip' }, p.categoria || 'Otro'),
         p.disponible ? null : h('span', { class: 'badge badge-off' }, borrado ? 'Borrado' : 'Pausado'),
@@ -115,23 +115,23 @@ export async function productPage(ctx: Ctx, id: string): Promise<HTMLElement> {
       h('p', null, '📍 Punto de entrega: ', h('strong', null, p.puntoEntrega)),
       h('p', { class: 'muted small' }, `Producto #${p.id} · registrado en el contrato`),
     ),
-    h('div', { class: 'card' },
+    h('div', { class: 'card vendedor-card' },
       h('h2', null, 'Vendedor'),
       h('p', null, personLink(p.vendedor, ctx.me)),
       reputationBlock(rep),
       h('p', { class: 'muted small' }, 'La reputación se calcula solo con pedidos registrados en el contrato. Es un indicador del historial, no una garantía.'),
     ),
     borrado
-      ? h('div', { class: 'card' }, h('p', null, 'Borraste este producto. Ya no aparece en el catálogo.'))
+      ? h('div', { class: 'card compra' }, h('p', null, 'Borraste este producto. Ya no aparece en el catálogo.'))
       : mine
-      ? h('div', { class: 'card' },
+      ? h('div', { class: 'card compra' },
         h('p', null, 'Es tu producto.'),
         h('p', null,
           h('button', { class: 'btn', onclick: toggle }, p.disponible ? 'Pausar producto' : 'Reactivar producto'),
           ' ',
           deleteButton(ctx, p, () => ctx.go('#/vender'))))
       : p.disponible
-        ? h('div', { class: 'card' },
+        ? h('div', { class: 'card compra' },
           h('h2', null, 'Hacer pedido'),
           h('div', { class: 'qty' },
             h('button', { class: 'btn btn-round', type: 'button', 'aria-label': 'Menos', onclick: () => setQty(quantity - 1) }, '−'),
@@ -142,6 +142,6 @@ export async function productPage(ctx: Ctx, id: string): Promise<HTMLElement> {
           h('p', { class: 'note' }, '💵 Pagas directo al vendedor en efectivo o transferencia, fuera de la app. CampusChain registra el pedido y cada paso, no el dinero.'),
           h('button', { class: 'btn btn-primary btn-block', onclick: order }, 'Hacer pedido'),
         )
-        : h('div', { class: 'card' }, h('p', null, 'El vendedor pausó este producto por ahora.')),
+        : h('div', { class: 'card compra' }, h('p', null, 'El vendedor pausó este producto por ahora.')),
   );
 }

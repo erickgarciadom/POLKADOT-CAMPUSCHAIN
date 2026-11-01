@@ -2,7 +2,7 @@ import { formatMxn, formatTimestamp } from '../../lib/money';
 import type { ResumenPeriodo } from '../../shared/types';
 import type { Ctx } from '../context';
 import { h } from '../dom';
-import { empty, section } from '../parts';
+import { bloque, empty } from '../parts';
 
 const MES = new Intl.DateTimeFormat('es-MX', { month: 'short' });
 const mxn = (centavos: string) => formatMxn(BigInt(centavos));
@@ -10,7 +10,7 @@ const mxn = (centavos: string) => formatMxn(BigInt(centavos));
 const stat = (value: string, label: string) => h('div', { class: 'stat' }, h('strong', null, value), h('span', null, label));
 
 function periodo(titulo: string, r: ResumenPeriodo): HTMLElement {
-  return h('div', { class: 'card' },
+  return h('div', { class: 'card periodo' },
     h('h3', null, titulo),
     h('div', { class: 'stats' },
       stat(mxn(r.totalCentavos), 'vendido'),
@@ -48,12 +48,14 @@ export async function salesPage(ctx: Ctx): Promise<HTMLElement> {
     r.ventas.length === 0
       ? empty('Todavía no tienes ventas completadas.')
       : h('div', null,
-        periodo('Últimos 7 días', r.semana),
-        periodo('Este mes', r.mes),
-        periodo('Este año', r.anio),
-        periodo('Desde el inicio', r.total),
-        section('Vendido por mes', h('div', { class: 'card' }, barras)),
-        section('Ventas completadas', h('div', { class: 'list' }, ...r.ventas.map((v) => h('a', { class: 'card row', href: `#/o/${v.orderId}` },
+        h('div', { class: 'periodos' },
+          periodo('Últimos 7 días', r.semana),
+          periodo('Este mes', r.mes),
+          periodo('Este año', r.anio),
+          periodo('Desde el inicio', r.total),
+        ),
+        bloque('grafica', 'Vendido por mes', h('div', { class: 'card' }, barras)),
+        bloque('ventas-lista', 'Ventas completadas', h('div', { class: 'list' }, ...r.ventas.map((v) => h('a', { class: 'card row', href: `#/o/${v.orderId}` },
           h('div', { class: 'row-main' },
             h('strong', null, v.tituloProducto),
             h('span', { class: 'muted small' }, `${v.cantidad} pz · completado ${formatTimestamp(v.completadoEn)}`),

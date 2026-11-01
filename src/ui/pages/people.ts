@@ -4,7 +4,7 @@ import { formatMxn } from '../../lib/money';
 import type { Direccion as Hex } from '../../shared/types';
 import type { Ctx } from '../context';
 import { h } from '../dom';
-import { copyButton, empty, explorerAddress, external, reputationBlock, section } from '../parts';
+import { bloque, copyButton, empty, explorerAddress, external, reputationBlock } from '../parts';
 
 /** #/v/:address — perfil público y reputación del vendedor. */
 export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
@@ -12,15 +12,15 @@ export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
   const isMe = ctx.me !== null && address.toLowerCase() === ctx.me.toLowerCase();
   return h('div', null,
     h('a', { class: 'back', href: '#/' }, '← Catálogo'),
-    h('div', { class: 'card' },
+    h('div', { class: 'card perfil' },
       h('h1', { class: 'mono' }, shortAddress(address), isMe ? ' (tú)' : ''),
       h('p', { class: 'small' }, external(explorerAddress(address), 'Ver en el explorador')),
     ),
-    section('Reputación',
+    bloque('reputacion', 'Reputación',
       reputationBlock(rep),
       h('p', { class: 'muted small' }, 'Calculado solo con lo que registró el contrato: es un indicador del historial, no una garantía de honestidad.'),
     ),
-    section('Productos disponibles', available.length
+    bloque('disponibles', 'Productos disponibles', available.length
       ? h('div', { class: 'list' }, ...available.map((p) => h('a', { class: 'card row', href: `#/p/${p.id}` },
         h('div', { class: 'row-main' }, h('strong', null, p.titulo), h('span', { class: 'muted small' }, `📍 ${p.puntoEntrega}`)),
         h('div', { class: 'row-side' }, h('strong', null, formatMxn(BigInt(p.precioCentavos)))))))
@@ -31,7 +31,7 @@ export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
 /** #/cuenta — conectar, tus direcciones (la SS58 para pedir PAS) y datos de la red. */
 export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
   const state = ctx.hub.getState();
-  const network = section('Red y contrato',
+  const network = bloque('red', 'Red y contrato',
     h('dl', { class: 'facts' },
       h('dt', null, 'Red'), h('dd', null, `Products Devnet · chainId ${CHAIN_ID}`),
       h('dt', null, 'Contrato'), h('dd', null, isContractConfigured()
@@ -41,7 +41,7 @@ export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
     ),
   );
 
-  const sesion = h('div', { class: 'card' },
+  const sesion = h('div', { class: 'card sesion' },
     h('p', { class: 'small muted' }, 'Sesión iniciada como:'),
     h('p', null, h('strong', null, ctx.usuario.email)),
     h('button', { class: 'btn btn-small', type: 'button', onclick: () => ctx.salir() }, 'Cerrar sesión'),
@@ -58,13 +58,13 @@ export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
   return h('div', null,
     h('h1', null, 'Cuenta'),
     sesion,
-    h('div', { class: 'card' },
+    h('div', { class: 'card cartera' },
       h('p', { class: 'small muted' }, 'Tu cuenta en esta app (SS58):'),
       h('p', { class: 'mono small break' }, ss58),
       h('p', null, copyButton(ss58, 'Copiar dirección SS58')),
       h('p', { class: 'note' }, '💧 Publicar productos y hacer pedidos guarda datos en el contrato, y eso pide un depósito en PAS aparte del gas. Si te sale «no tiene PAS para el depósito», pega esta dirección en faucet.polkadot.io (Paseo → Asset Hub).'),
     ),
-    h('div', { class: 'card' },
+    h('div', { class: 'card cartera' },
       h('p', { class: 'small muted' }, 'La misma cuenta en el contrato (H160):'),
       h('p', { class: 'mono small break' }, h160),
       h('p', null, copyButton(h160, 'Copiar dirección 0x'), ' ', h('a', { class: 'btn btn-small', href: `#/v/${h160}` }, 'Ver mi perfil público')),

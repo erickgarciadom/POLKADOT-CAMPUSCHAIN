@@ -5,7 +5,7 @@ import type { CampusData } from '../shared/datasource';
 import type { Direccion as Hex, Resultado, Sesion } from '../shared/types';
 import type { Ctx } from './context';
 import { h, replace } from './dom';
-import { icono, SECCIONES, type ItemMenu, type Seccion } from './nav';
+import { icono, rutaDe, SECCIONES, type ItemMenu, type Ruta, type Seccion, type Vista } from './nav';
 import { catalogPage, productPage } from './pages/catalog';
 import { myOrdersPage, orderPage } from './pages/orders';
 import { accountPage, sellerPage } from './pages/people';
@@ -14,20 +14,22 @@ import { sellPage } from './pages/sell';
 import { failure, loading } from './parts';
 import { createTxPopup } from './txPopup';
 
-type Route = { tab: Seccion; render: (ctx: Ctx) => Promise<HTMLElement> };
+type Route = Ruta & { render: (ctx: Ctx) => Promise<HTMLElement> };
 
-/** Hash → pantalla. Las rutas con id validan el formato antes de leer el contrato. */
+const PANTALLA: Record<Vista, (ctx: Ctx, id: string) => Promise<HTMLElement>> = {
+  catalogo: (c) => catalogPage(c),
+  producto: (c, id) => productPage(c, id),
+  vendedor: (c, id) => sellerPage(c, id as Hex),
+  pedidos: (c) => myOrdersPage(c),
+  pedido: (c, id) => orderPage(c, id as Hex),
+  vender: (c) => sellPage(c),
+  ventas: (c) => salesPage(c),
+  cuenta: (c) => accountPage(c),
+};
+
 function route(hash: string): Route {
-  const path = hash.replace(/^#/, '') || '/';
-  let m: RegExpExecArray | null;
-  if ((m = /^\/p\/(\d{1,12})$/.exec(path))) { const id = m[1]!; return { tab: 'catalogo', render: (c) => productPage(c, id) }; }
-  if ((m = /^\/o\/(0x[0-9a-fA-F]{64})$/.exec(path))) { const id = m[1] as Hex; return { tab: 'pedidos', render: (c) => orderPage(c, id) }; }
-  if ((m = /^\/v\/(0x[0-9a-fA-F]{40})$/.exec(path))) { const a = m[1] as Hex; return { tab: 'catalogo', render: (c) => sellerPage(c, a) }; }
-  if (path === '/pedidos') return { tab: 'pedidos', render: myOrdersPage };
-  if (path === '/vender') return { tab: 'vender', render: sellPage };
-  if (path === '/ventas') return { tab: 'ventas', render: salesPage };
-  if (path === '/cuenta') return { tab: 'cuenta', render: accountPage };
-  return { tab: 'catalogo', render: catalogPage };
+  const r = rutaDe(hash);
+  return { ...r, render: (c) => PANTALLA[r.vista](c, r.id ?? '') };
 }
 
 /** Escrituras de CampusData: las que devuelven un Resultado. */
@@ -138,10 +140,12 @@ export function mountApp(root: HTMLElement, hub: Hub, source: CampusData, usuari
     // Sin cuenta de Polkadot conectada no se ve ninguna pantalla.
     nav.hidden = !state.account;
     if (!state.account) {
+      main.dataset.vista = 'conectar';
       replace(main, connectGate(state));
       return;
     }
     const r = route(location.hash);
+    main.dataset.vista = r.vista;
     replace(main, loading());
     if (!isContractConfigured()) {
       replace(main, h('div', { class: 'card' }, h('h1', null, 'CampusChain'), h('p', null, 'Pega la dirección del contrato CampusChain en src/contract/config.ts.')));

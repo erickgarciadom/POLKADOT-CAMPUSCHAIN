@@ -17,6 +17,31 @@ export const SECCIONES: readonly ItemMenu[] = [
   { id: 'cuenta', href: '#/cuenta', etiqueta: 'Cuenta', trazo: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
 ];
 
+/** Cada pantalla tiene su propia distribución en styles.css (`.main[data-vista=…]`). */
+export type Vista = 'catalogo' | 'producto' | 'vendedor' | 'pedidos' | 'pedido' | 'vender' | 'ventas' | 'cuenta';
+
+export interface Ruta {
+  vista: Vista;
+  /** Sección del menú que se marca. */
+  tab: Seccion;
+  /** Id del producto, del pedido o dirección del vendedor, ya validado. */
+  id?: string;
+}
+
+/** Hash → pantalla. Las rutas con id validan el formato antes de leer el contrato. */
+export function rutaDe(hash: string): Ruta {
+  const path = hash.replace(/^#/, '') || '/';
+  let m: RegExpExecArray | null;
+  if ((m = /^\/p\/(\d{1,12})$/.exec(path))) return { vista: 'producto', tab: 'catalogo', id: m[1]! };
+  if ((m = /^\/o\/(0x[0-9a-fA-F]{64})$/.exec(path))) return { vista: 'pedido', tab: 'pedidos', id: m[1]! };
+  if ((m = /^\/v\/(0x[0-9a-fA-F]{40})$/.exec(path))) return { vista: 'vendedor', tab: 'catalogo', id: m[1]! };
+  if (path === '/pedidos') return { vista: 'pedidos', tab: 'pedidos' };
+  if (path === '/vender') return { vista: 'vender', tab: 'vender' };
+  if (path === '/ventas') return { vista: 'ventas', tab: 'ventas' };
+  if (path === '/cuenta') return { vista: 'cuenta', tab: 'cuenta' };
+  return { vista: 'catalogo', tab: 'catalogo' };
+}
+
 const SVG = 'http://www.w3.org/2000/svg';
 
 export function icono(trazo: string): SVGSVGElement {
