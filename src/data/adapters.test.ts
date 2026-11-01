@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Status, type Order, type Product } from '../contract/campuschain';
-import { ordenDesde, pasoDesde, productoDesde, reporteDesde, reputacionDesde } from './adapters';
+import { esVisible, ordenDesde, pasoDesde, productoDesde, reporteDesde, reputacionDesde } from './adapters';
 
 const SELLER = '0x0000000000000000000000000000000000000001';
 const BUYER = '0x0000000000000000000000000000000000000002';
@@ -8,6 +8,13 @@ const ID = `0x${'ab'.repeat(32)}` as const;
 
 const product: Product = { id: 7n, seller: SELLER, name: 'Brownies', description: 'Caseros', category: 'Comida', pickupPoint: 'Explanada', priceCents: 3500n, available: true };
 const order = (status: Order['status']): Order => ({ id: ID, productId: 7n, buyer: BUYER, seller: SELLER, quantity: 2, totalCents: 7000n, orderHash: '0xab', status, createdAt: 10 });
+
+describe('productos visibles', () => {
+  it('oculta los productos anteriores al primero visible', () => {
+    expect([1n, 4n, 5n, 9n].filter((id) => esVisible(id, 5n))).toEqual([5n, 9n]);
+    expect(esVisible(1n, 1n)).toBe(true);
+  });
+});
 
 describe('del contrato a shared/types', () => {
   it('producto: bigint a texto, sin stock ni imagen', () => {

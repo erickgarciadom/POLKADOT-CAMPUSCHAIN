@@ -4,6 +4,7 @@
  * comporten igual. Los cambios se pierden al recargar.
  */
 import { reporteDesde } from '../data/adapters';
+import { metricasDesde } from '../data/metricas';
 import type { CampusData } from '../shared/datasource';
 import { opcionesPedido, resumenDe } from '../shared/estados';
 import type { Orden, Paso, Producto, Resultado, Venta } from '../shared/types';
@@ -31,6 +32,16 @@ export function createMockSource(): CampusData {
   };
   const nuevos = (list: Producto[]) => [...list].sort((a, b) => Number(b.id) - Number(a.id)).map((p) => ({ ...p }));
   const ok = (message: string): Resultado => ({ ok: true, message });
+  const misVentas = (): Venta[] => ordenes
+    .filter((o) => o.estado === 'completado' && mismo(o.vendedor, YO))
+    .map((o) => ({
+      orderId: o.orderId,
+      productoId: o.productoId,
+      tituloProducto: o.tituloProducto,
+      cantidad: o.cantidad,
+      totalCentavos: o.totalCentavos,
+      completadoEn: historiales.get(o.orderId)?.find((s) => s.estado === 'completado')?.timestamp ?? o.timestamp,
+    }));
 
   return {
     async catalogo() {
@@ -84,17 +95,15 @@ export function createMockSource(): CampusData {
     },
     async reporteVentas(fecha) {
       await espera();
-      const ventas: Venta[] = ordenes
-        .filter((o) => o.estado === 'completado' && mismo(o.vendedor, YO))
-        .map((o) => ({
-          orderId: o.orderId,
-          productoId: o.productoId,
-          tituloProducto: o.tituloProducto,
-          cantidad: o.cantidad,
-          totalCentavos: o.totalCentavos,
-          completadoEn: historiales.get(o.orderId)?.find((s) => s.estado === 'completado')?.timestamp ?? o.timestamp,
-        }));
-      return reporteDesde(ventas, fecha);
+      return reporteDesde(misVentas(), fecha);
+    },
+    async metricas(fecha) {
+      await espera();
+      return metricasDesde({
+        recibidos: ordenes.filter((o) => mismo(o.vendedor, YO)).map((o) => ({ ...o })),
+        ventas: misVentas(),
+        productos: productos.filter((p) => mismo(p.vendedor, YO) && !borrados.has(p.id)),
+      }, fecha);
     },
 
     async publicarProducto(n) {

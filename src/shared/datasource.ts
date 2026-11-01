@@ -7,6 +7,7 @@
 import type {
   AccionPedido,
   Direccion,
+  MetricasTienda,
   NuevoProducto,
   Orden,
   Paso,
@@ -47,6 +48,8 @@ export interface CampusData {
   verificarPedido(orderId: Direccion): Promise<{ coincide: boolean; hash: string }>;
   /** «Mis ventas»: solo pedidos completados donde soy el vendedor. */
   reporteVentas(ahora: Date): Promise<ReporteVentas>;
+  /** KPIs de mi tienda (ventas, compradores, productos) como JSON descargable. */
+  metricas(ahora: Date): Promise<MetricasTienda>;
 
   /* ----------------------------------------------------------- escrituras */
 

@@ -217,6 +217,12 @@ strong { font-weight: 700; }
   .tab-icon svg { width: 20px; height: 20px; }
 }
 
+/* KPIs de «Mis ventas»: ranking de más vendidos y el JSON descargable. */
+.ranking { margin: 8px 0; padding-left: 1.4rem; }
+.ranking li { margin: 4px 0; }
+.ranking li::marker { color: var(--icon); font-weight: 700; }
+.json { font-family: var(--font-mono); font-size: 0.72rem; max-height: 320px; overflow: auto; white-space: pre; }
+
 /* --------------------------------------------------------------- bloques */
 
 .card {
