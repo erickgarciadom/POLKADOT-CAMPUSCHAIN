@@ -88,9 +88,40 @@ Cada persona de la demo necesita PAS en su cuenta de la app.
 | `src/contract/` | Dirección (`config.ts`), ABI, tipos y decodificadores, lecturas, errores y hashes de transacción |
 | `src/hub/` | Conexión con el Host: cuenta, gas y firmas (basado en `game/src/hub/` del curso) |
 | `src/lib/` | Lógica pura con tests: acciones por rol, reputación, dinero, errores de transacción |
-| `src/ui/` | Pantallas: Catálogo, Producto, Mis pedidos, Pedido, Vender, Vendedor y Cuenta |
+| `src/ui/` | Pantallas: Entrar/Registro, Catálogo, Producto, Mis pedidos, Pedido, Vender, Mis ventas, Vendedor y Cuenta |
+| `src/firebase/` | Registro e inicio de sesión (Firebase Auth) y productos borrados (Firestore) |
+| `firestore.rules`, `firebase.json`, `.firebaserc` | Reglas de la base y proyecto `campuschain-1e093` |
 | `polkadot-app-deploy.config.mjs` | Nombre, descripción e icono para publicar |
 | `assets/icono.png` | Icono 512 × 512 |
+
+---
+
+## Cuentas (Firebase)
+
+Para entrar a la app hay que registrarse e iniciar sesión.
+
+1. **Registro:** el correo tiene que terminar en `@uanl.edu.mx` y la contraseña no puede quedar en
+   blanco (mínimo 6 caracteres). Firebase Auth crea la cuenta y la app guarda `usuarios/{uid}` con el
+   correo y la fecha. Firebase guarda la contraseña cifrada; Firestore nunca la ve.
+2. **Inicio de sesión:** Firebase compara correo y contraseña con lo registrado, y la app comprueba
+   que exista `usuarios/{uid}` con el mismo correo. Si falta, cierra la sesión.
+
+`firestore.rules` vuelve a revisar el dominio del lado del servidor: una cuenta que no sea
+`@uanl.edu.mx` no puede leer ni escribir nada. Para publicar cambios de las reglas:
+`firebase.cmd deploy --only firestore:rules` (en PowerShell usa `firebase.cmd`).
+
+| Colección | Qué guarda | Quién |
+|---|---|---|
+| `usuarios/{uid}` | `email`, `creadoEn` | Solo su dueño lee y crea; no se edita |
+| `usuarios/{uid}/borrados/{productId}` | `vendedor` (0x…), `borradoEn` | Solo su dueño |
+
+**Borrar producto:** solo lo ve quien publicó el producto. El contrato no puede borrar, así que la app
+lo marca no disponible (`setAvailable(false)`, firma una vez; si ya estaba pausado no firma) y guarda
+la marca de borrado: sale del catálogo y de «Mis productos».
+
+**Mis ventas (📈):** solo cuenta pedidos **Completados** (el comprador confirmó que lo recibió):
+vendido, número de ventas, piezas y promedio en los últimos 7 días, el mes, el año y desde el inicio,
+más una gráfica de los últimos 6 meses y la lista de ventas.
 
 ---
 

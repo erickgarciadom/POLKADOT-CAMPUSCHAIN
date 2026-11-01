@@ -46,8 +46,14 @@ export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
     ),
   );
 
+  const sesion = h('div', { class: 'card' },
+    h('p', { class: 'small muted' }, 'Sesión iniciada como:'),
+    h('p', null, h('strong', null, ctx.usuario.email ?? '')),
+    h('button', { class: 'btn btn-small', type: 'button', onclick: () => ctx.salir() }, 'Cerrar sesión'),
+  );
+
   if (!ctx.me || !state.account) {
-    return h('div', null, h('h1', null, 'Cuenta'),
+    return h('div', null, h('h1', null, 'Cuenta'), sesion,
       empty(state.host === 'fuera' ? state.message : 'Conecta tu cuenta de la Polkadot App para comprar y vender.',
         state.host === 'fuera' ? null : h('button', { class: 'btn btn-primary', onclick: () => ctx.ensureAccount().then((ok) => ok && ctx.refresh()) }, 'Conectar cuenta')),
       network);
@@ -56,6 +62,7 @@ export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
   const { h160, ss58 } = state.account;
   return h('div', null,
     h('h1', null, 'Cuenta'),
+    sesion,
     h('div', { class: 'card' },
       h('p', { class: 'small muted' }, 'Tu cuenta en esta app (SS58):'),
       h('p', { class: 'mono small break' }, ss58),

@@ -1,3 +1,4 @@
+import type { User } from 'firebase/auth';
 import type { Hex } from '../contract/campuschain';
 import { isContractConfigured } from '../contract/config';
 import type { Hub, HubState } from '../hub/hub';
@@ -7,11 +8,12 @@ import { h, replace } from './dom';
 import { catalogPage, productPage } from './pages/catalog';
 import { myOrdersPage, orderPage } from './pages/orders';
 import { accountPage, sellerPage } from './pages/people';
+import { salesPage } from './pages/sales';
 import { sellPage } from './pages/sell';
 import { failure, loading } from './parts';
 import { createTxPopup } from './txPopup';
 
-type Route = { tab: 'catalogo' | 'pedidos' | 'vender' | 'cuenta'; render: (ctx: Ctx) => Promise<HTMLElement> };
+type Route = { tab: 'catalogo' | 'pedidos' | 'vender' | 'ventas' | 'cuenta'; render: (ctx: Ctx) => Promise<HTMLElement> };
 
 /** Hash → pantalla. Las rutas con id validan el formato antes de leer el contrato. */
 function route(hash: string): Route {
@@ -22,11 +24,12 @@ function route(hash: string): Route {
   if ((m = /^\/v\/(0x[0-9a-fA-F]{40})$/.exec(path))) { const a = m[1] as Hex; return { tab: 'catalogo', render: (c) => sellerPage(c, a) }; }
   if (path === '/pedidos') return { tab: 'pedidos', render: myOrdersPage };
   if (path === '/vender') return { tab: 'vender', render: sellPage };
+  if (path === '/ventas') return { tab: 'ventas', render: salesPage };
   if (path === '/cuenta') return { tab: 'cuenta', render: accountPage };
   return { tab: 'catalogo', render: catalogPage };
 }
 
-export function mountApp(root: HTMLElement, hub: Hub): void {
+export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () => void): void {
   const header = h('header', { class: 'top' });
   const banner = h('div', { class: 'banner', hidden: true });
   const main = h('main', { class: 'main' });
@@ -57,6 +60,8 @@ export function mountApp(root: HTMLElement, hub: Hub): void {
 
   const ctx = (): Ctx => ({
     hub,
+    usuario,
+    salir,
     me: hub.getState().account?.h160 ?? null,
     go: (path) => {
       if (location.hash === path) draw();
@@ -97,6 +102,7 @@ export function mountApp(root: HTMLElement, hub: Hub): void {
       tab('catalogo', '#/', '🛍️', 'Catálogo', r.tab),
       tab('pedidos', '#/pedidos', '📦', 'Mis pedidos', r.tab),
       tab('vender', '#/vender', '🏷️', 'Vender', r.tab),
+      tab('ventas', '#/ventas', '📈', 'Ventas', r.tab),
       tab('cuenta', '#/cuenta', '👤', 'Cuenta', r.tab),
     );
   };

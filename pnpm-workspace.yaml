@@ -3,7 +3,10 @@ packages:
   - "."
 
 allowBuilds:
+  # Firebase no necesita sus scripts de instalación.
+  '@firebase/util': false
   esbuild: false
+  protobufjs: false
 
 # Los descriptores del devnet son una publicación reciente: se excluyen de la espera mínima de pnpm.
 minimumReleaseAgeExclude:

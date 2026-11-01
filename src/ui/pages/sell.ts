@@ -1,6 +1,8 @@
 import { CATEGORIES, LIMITS, type Product } from '../../contract/campuschain';
+import { productosBorrados } from '../../firebase/borrados';
 import { formatMxn, parsePriceCents } from '../../lib/money';
 import type { Ctx } from '../context';
+import { deleteButton } from '../deleteProduct';
 import { h } from '../dom';
 import { empty, section } from '../parts';
 import { orderList } from './orders';
@@ -14,7 +16,13 @@ export async function sellPage(ctx: Ctx): Promise<HTMLElement> {
       empty('Conecta tu cuenta para publicar productos y atender pedidos.', h('button', { class: 'btn btn-primary', onclick: () => ctx.ensureAccount().then((ok) => ok && ctx.refresh()) }, 'Conectar cuenta')));
   }
   const me = ctx.me;
-  const [orders, products] = await Promise.all([ctx.hub.reads.sellerOrders(me), ctx.hub.reads.sellerProducts(me)]);
+  const [orders, all, borrados] = await Promise.all([
+    ctx.hub.reads.sellerOrders(me),
+    ctx.hub.reads.sellerProducts(me),
+    productosBorrados(ctx.usuario.uid).catch(() => new Set<string>()),
+  ]);
+  // Los borrados siguen en el contrato (no disponibles); se quitan de la lista.
+  const products = all.filter((p) => p.available || !borrados.has(p.id.toString()));
 
   return h('div', null,
     h('h1', null, 'Vender'),
@@ -22,7 +30,7 @@ export async function sellPage(ctx: Ctx): Promise<HTMLElement> {
     section('Mis productos', products.length
       ? h('div', { class: 'list' }, ...[...products].reverse().map((p) => productRow(ctx, p)))
       : empty('Todavía no publicas productos.')),
-    section('Publicar producto', publishForm(ctx, products.length)),
+    section('Publicar producto', publishForm(ctx, all.length)),
     h('p', { class: 'muted small' }, 'Todo lo que publicas queda en un contrato público. No pongas tu nombre completo, teléfono ni dirección: usa un punto general del campus.'),
   );
 }
@@ -49,6 +57,7 @@ function productRow(ctx: Ctx, p: Product): HTMLElement {
     h('div', { class: 'row-side' },
       p.available ? h('span', { class: 'badge badge-ok' }, 'Disponible') : h('span', { class: 'badge badge-off' }, 'Pausado'),
       h('button', { class: 'btn btn-small', onclick: toggle }, p.available ? 'Pausar' : 'Reactivar'),
+      deleteButton(ctx, p, () => ctx.refresh(), true),
     ),
   );
 }

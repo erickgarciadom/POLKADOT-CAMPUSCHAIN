@@ -1,7 +1,9 @@
 import { CATEGORIES, computeOrderHash, LIMITS, newOrderId, type Product } from '../../contract/campuschain';
 import { formatMxn } from '../../lib/money';
 import { reputationLine, reputationOf } from '../../lib/reputation';
+import { productosBorrados } from '../../firebase/borrados';
 import type { Ctx } from '../context';
+import { deleteButton, esMio } from '../deleteProduct';
 import { h, replace } from '../dom';
 import { empty, personLink, reputationBlock } from '../parts';
 
@@ -76,7 +78,8 @@ export async function catalogPage(ctx: Ctx): Promise<HTMLElement> {
 export async function productPage(ctx: Ctx, id: bigint): Promise<HTMLElement> {
   const p = await ctx.hub.reads.product(id);
   const rep = reputationOf(await ctx.hub.reads.stats(p.seller));
-  const mine = ctx.me !== null && p.seller.toLowerCase() === ctx.me.toLowerCase();
+  const mine = esMio(ctx, p);
+  const borrado = mine && !p.available && (await productosBorrados(ctx.usuario.uid).catch(() => new Set<string>())).has(p.id.toString());
 
   let quantity = 1;
   const qty = h('span', { class: 'qty-value' }, '1');
@@ -132,7 +135,7 @@ export async function productPage(ctx: Ctx, id: bigint): Promise<HTMLElement> {
     h('div', { class: 'card' },
       h('div', { class: 'product-top' },
         h('span', { class: 'chip' }, p.category || 'Otro'),
-        p.available ? null : h('span', { class: 'badge badge-off' }, 'Pausado'),
+        p.available ? null : h('span', { class: 'badge badge-off' }, borrado ? 'Borrado' : 'Pausado'),
       ),
       h('h1', null, p.name),
       p.description ? h('p', null, p.description) : null,
@@ -146,10 +149,15 @@ export async function productPage(ctx: Ctx, id: bigint): Promise<HTMLElement> {
       reputationBlock(rep),
       h('p', { class: 'muted small' }, 'La reputación se calcula solo con pedidos registrados en el contrato. Es un indicador del historial, no una garantía.'),
     ),
-    mine
+    borrado
+      ? h('div', { class: 'card' }, h('p', null, 'Borraste este producto. Ya no aparece en el catálogo.'))
+      : mine
       ? h('div', { class: 'card' },
         h('p', null, 'Es tu producto.'),
-        h('button', { class: 'btn', onclick: toggle }, p.available ? 'Pausar producto' : 'Reactivar producto'))
+        h('p', null,
+          h('button', { class: 'btn', onclick: toggle }, p.available ? 'Pausar producto' : 'Reactivar producto'),
+          ' ',
+          deleteButton(ctx, p, () => ctx.go('#/vender'))))
       : p.available
         ? h('div', { class: 'card' },
           h('h2', null, 'Hacer pedido'),

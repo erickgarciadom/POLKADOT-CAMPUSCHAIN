@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// CampusChain: registro de usuarios con correo @uanl.edu.mx y productos borrados por su vendedor.
+// El dominio se vuelve a revisar aquí (del lado del servidor) aunque la app ya lo valide:
+// si cambias DOMINIO_UANL en src/firebase/registro.ts, cambia también esta regla.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function esUanl() {
+      return request.auth != null
+        && request.auth.token.email.lower().matches('^[^@\\s]+@uanl[.]edu[.]mx$');
+    }
+
+    function esDueno(uid) {
+      return esUanl() && request.auth.uid == uid;
+    }
+
+    // usuarios/{uid}: un registro por cuenta, solo lo lee y lo crea su dueño. No se edita ni se borra.
+    match /usuarios/{uid} {
+      allow read: if esDueno(uid);
+      allow create: if esDueno(uid)
+        && request.resource.data.keys().hasOnly(['email', 'creadoEn'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.creadoEn == request.time;
+      allow update, delete: if false;
+
+      // usuarios/{uid}/borrados/{productId}: productos que este usuario borró.
+      match /borrados/{productId} {
+        allow read: if esDueno(uid);
+        allow create: if esDueno(uid)
+          && productId.matches('^[0-9]{1,12}$')
+          && request.resource.data.keys().hasOnly(['vendedor', 'borradoEn'])
+          && request.resource.data.vendedor.matches('^0x[0-9a-f]{40}$')
+          && request.resource.data.borradoEn == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    // Nada más es accesible.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

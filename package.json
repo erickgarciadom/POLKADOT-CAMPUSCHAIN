@@ -1,6 +1,6 @@
 {
   "name": "campuschain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -16,6 +16,7 @@
   "dependencies": {
     "@parity/product-sdk": "0.39.0",
     "@parity/product-sdk-descriptors": "npm:@polkadot-community-foundation/product-sdk-descriptors@0.14.0-pcf.1",
+    "firebase": "12.19.0",
     "polkadot-api": "3.2.1",
     "viem": "2.56.9"
   },
