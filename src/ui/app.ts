@@ -5,6 +5,7 @@ import type { CampusData } from '../shared/datasource';
 import type { Direccion as Hex, Resultado, Sesion } from '../shared/types';
 import type { Ctx } from './context';
 import { h, replace } from './dom';
+import { icono, SECCIONES, type ItemMenu, type Seccion } from './nav';
 import { catalogPage, productPage } from './pages/catalog';
 import { myOrdersPage, orderPage } from './pages/orders';
 import { accountPage, sellerPage } from './pages/people';
@@ -13,7 +14,7 @@ import { sellPage } from './pages/sell';
 import { failure, loading } from './parts';
 import { createTxPopup } from './txPopup';
 
-type Route = { tab: 'catalogo' | 'pedidos' | 'vender' | 'ventas' | 'cuenta'; render: (ctx: Ctx) => Promise<HTMLElement> };
+type Route = { tab: Seccion; render: (ctx: Ctx) => Promise<HTMLElement> };
 
 /** Hash → pantalla. Las rutas con id validan el formato antes de leer el contrato. */
 function route(hash: string): Route {
@@ -87,8 +88,8 @@ export function mountApp(root: HTMLElement, hub: Hub, source: CampusData, usuari
     ensureAccount,
   });
 
-  const tab = (id: Route['tab'], href: string, icon: string, label: string, current: Route['tab']) =>
-    h('a', { class: `tab${id === current ? ' on' : ''}`, href, 'aria-current': id === current ? 'page' : false }, h('span', { class: 'tab-icon', 'aria-hidden': 'true' }, icon), label);
+  const tab = ({ id, href, etiqueta, trazo }: ItemMenu, current: Seccion) =>
+    h('a', { class: `tab${id === current ? ' on' : ''}`, href, 'aria-current': id === current ? 'page' : false }, h('span', { class: 'tab-icon' }, icono(trazo)), etiqueta);
 
   const drawChrome = (state: HubState) => {
     const r = route(location.hash);
@@ -106,13 +107,7 @@ export function mountApp(root: HTMLElement, hub: Hub, source: CampusData, usuari
       : state.host === 'fuera' || state.host === 'error' ? state.message : '';
     banner.hidden = notice === '';
     banner.textContent = notice;
-    replace(nav,
-      tab('catalogo', '#/', '🛍️', 'Catálogo', r.tab),
-      tab('pedidos', '#/pedidos', '📦', 'Mis pedidos', r.tab),
-      tab('vender', '#/vender', '🏷️', 'Vender', r.tab),
-      tab('ventas', '#/ventas', '📈', 'Ventas', r.tab),
-      tab('cuenta', '#/cuenta', '👤', 'Cuenta', r.tab),
-    );
+    replace(nav, ...SECCIONES.map((s) => tab(s, r.tab)));
   };
 
   /** Paso 2 del acceso: después del login hay que conectar la cuenta de Polkadot y aprobar en el Host. */
