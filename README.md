@@ -90,11 +90,29 @@ Cada persona de la demo necesita PAS en su cuenta de la app.
 | `src/lib/` | Lógica pura con tests: acciones por rol, reputación, dinero, errores de transacción |
 | `src/ui/` | Pantallas: Entrar/Registro, Catálogo, Producto, Mis pedidos, Pedido, Vender, Mis ventas, Vendedor y Cuenta |
 | `src/firebase/` | Registro e inicio de sesión (Firebase Auth) y productos borrados (Firestore) |
+| `src/shared/` | Contrato de datos entre interfaz y datos: tipos JSON (`Producto`, `Orden`…), `CampusData` y estados |
+| `src/data/` | `CampusData` real: adaptadores del contrato a `shared/` y `realSource.ts` |
+| `src/mocks/` | `CampusData` de ejemplo para `pnpm dev --mode mock` |
 | `firestore.rules`, `firebase.json`, `.firebaserc` | Reglas de la base y proyecto `campuschain-1e093` |
 | `polkadot-app-deploy.config.mjs` | Nombre, descripción e icono para publicar |
 | `assets/icono.png` | Icono 512 × 512 |
 
 ---
+
+## Trabajo en dos ramas
+
+| Rama | Quién | Carpetas |
+|---|---|---|
+| `frontend-ui` | Desarrollador 1: interfaz y flujos | `src/ui/`, `src/mocks/`, `src/styles.css` |
+| `backend-data` | Desarrollador 2: datos, Firebase y reportes | `src/data/`, `src/contract/`, `src/hub/`, `src/firebase/`, `src/lib/` |
+
+- Las pantallas solo hablan con `ctx.data` (`src/shared/datasource.ts`). El Desarrollador 1 trabaja con
+  `pnpm dev --mode mock` (datos de `src/mocks/fixtures.ts`, sin Host, red ni Firebase) y no espera a la
+  base real.
+- `src/shared/` lo tocan los dos: cambios en PRs chicos a `main`; después cada quien hace
+  `git rebase main` en su rama. Si cambian los tipos, `tsc` y `src/mocks/mockSource.test.ts` avisan.
+- Los revisores por carpeta están en `.github/CODEOWNERS` (pon los usuarios de GitHub y quita el `#`).
+- Punto de guardado antes de esta organización: tag `respaldo-antes-reestructura` (rama `respaldo-v0.2.1`).
 
 ## Cuentas (Firebase)
 

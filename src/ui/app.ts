@@ -1,8 +1,8 @@
-import type { User } from 'firebase/auth';
-import type { Hex } from '../contract/campuschain';
 import { isContractConfigured } from '../contract/config';
 import type { Hub, HubState } from '../hub/hub';
 import { shortAddress } from '../lib/format';
+import type { CampusData } from '../shared/datasource';
+import type { Direccion as Hex, Resultado, Sesion } from '../shared/types';
 import type { Ctx } from './context';
 import { h, replace } from './dom';
 import { catalogPage, productPage } from './pages/catalog';
@@ -19,7 +19,7 @@ type Route = { tab: 'catalogo' | 'pedidos' | 'vender' | 'ventas' | 'cuenta'; ren
 function route(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/';
   let m: RegExpExecArray | null;
-  if ((m = /^\/p\/(\d{1,12})$/.exec(path))) { const id = BigInt(m[1]!); return { tab: 'catalogo', render: (c) => productPage(c, id) }; }
+  if ((m = /^\/p\/(\d{1,12})$/.exec(path))) { const id = m[1]!; return { tab: 'catalogo', render: (c) => productPage(c, id) }; }
   if ((m = /^\/o\/(0x[0-9a-fA-F]{64})$/.exec(path))) { const id = m[1] as Hex; return { tab: 'pedidos', render: (c) => orderPage(c, id) }; }
   if ((m = /^\/v\/(0x[0-9a-fA-F]{40})$/.exec(path))) { const a = m[1] as Hex; return { tab: 'catalogo', render: (c) => sellerPage(c, a) }; }
   if (path === '/pedidos') return { tab: 'pedidos', render: myOrdersPage };
@@ -29,7 +29,10 @@ function route(hash: string): Route {
   return { tab: 'catalogo', render: catalogPage };
 }
 
-export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () => void): void {
+/** Escrituras de CampusData: las que devuelven un Resultado. */
+const ESCRITURAS = ['publicarProducto', 'cambiarDisponible', 'borrarProducto', 'crearPedido', 'accionPedido'] as const;
+
+export function mountApp(root: HTMLElement, hub: Hub, source: CampusData, usuario: Sesion, salir: () => void): void {
   const header = h('header', { class: 'top' });
   const banner = h('div', { class: 'banner', hidden: true });
   const main = h('main', { class: 'main' });
@@ -58,8 +61,20 @@ export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () =
     return hub.getState().account !== null;
   };
 
+  // Sin popup (fuera del Host, otra firma en curso, modo mock), el motivo de un fallo va en un aviso.
+  const data: CampusData = { ...source };
+  for (const name of ESCRITURAS) {
+    const write = source[name] as (...args: unknown[]) => Promise<Resultado>;
+    (data as unknown as Record<string, unknown>)[name] = async (...args: unknown[]) => {
+      const r = await write(...args);
+      if (!r.ok && !hub.getState().progress) toast(r.message, 'error');
+      return r;
+    };
+  }
+
   const ctx = (): Ctx => ({
     hub,
+    data,
     usuario,
     salir,
     me: hub.getState().account?.h160 ?? null,
@@ -70,13 +85,6 @@ export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () =
     refresh: () => draw(),
     toast,
     ensureAccount,
-    async write(req) {
-      if (!(await ensureAccount())) return { ok: false, message: hub.getState().message };
-      const r = await hub.write(req);
-      // Sin popup (fuera del Host, otra firma en curso), el motivo va en un aviso.
-      if (!r.ok && !hub.getState().progress) toast(r.message, 'error');
-      return r;
-    },
   });
 
   const tab = (id: Route['tab'], href: string, icon: string, label: string, current: Route['tab']) =>
@@ -118,7 +126,7 @@ export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () =
     return h('div', { class: 'auth' },
       h('div', { class: 'card' },
         h('h1', null, 'Conecta tu cuenta'),
-        h('p', null, `Sesión iniciada como ${usuario.email ?? ''}.`),
+        h('p', null, `Sesión iniciada como ${usuario.email}.`),
         h('p', { class: 'muted small' }, 'Para entrar al marketplace conecta tu cuenta de la Polkadot App y aprueba los permisos en tu celular o en Polkadot Desktop.'),
         waiting ? loading(state.message) : state.host === 'listo' ? null : h('p', { class: 'bad small' }, state.message),
         action,

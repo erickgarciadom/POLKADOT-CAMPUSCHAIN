@@ -1,0 +1,24 @@
+# Quién revisa cada parte. Cambia los @usuario por los de GitHub del equipo y quita el «#».
+# Mientras estén comentadas, GitHub no pide revisores.
+
+# Desarrollador 1 — interfaz y flujos de usuario (rama frontend-ui)
+# /src/ui/        @desarrollador-1
+# /src/mocks/     @desarrollador-1
+# /src/styles.css @desarrollador-1
+# /src/lib/format.ts @desarrollador-1
+# /src/lib/money.ts  @desarrollador-1
+
+# Desarrollador 2 — datos, Firebase y reportes de ventas (rama backend-data)
+# /src/data/      @desarrollador-2
+# /src/contract/  @desarrollador-2
+# /src/hub/       @desarrollador-2
+# /src/firebase/  @desarrollador-2
+# /src/lib/orderActions.ts @desarrollador-2
+# /src/lib/reputation.ts   @desarrollador-2
+# /src/lib/sales.ts        @desarrollador-2
+# /src/lib/txErrors.ts     @desarrollador-2
+# /firestore.rules         @desarrollador-2
+
+# Contrato de datos: lo revisan los dos.
+# /src/shared/    @desarrollador-1 @desarrollador-2
+# /src/main.ts    @desarrollador-1 @desarrollador-2

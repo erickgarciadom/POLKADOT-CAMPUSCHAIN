@@ -1,23 +1,22 @@
-import { STATUS_LABEL, type Hex, type Status } from '../contract/campuschain';
 import { EXPLORER_URL } from '../contract/config';
 import { describeError, shortAddress } from '../lib/format';
-import type { Reputation } from '../lib/reputation';
+import { etiquetaEstado } from '../shared/estados';
+import type { Direccion, EstadoOrden, Reputacion } from '../shared/types';
 import { h, type Child } from './dom';
 
-export const STATUS_TONE: Record<Status, string> = {
-  0: 'off',
-  1: 'nuevo',
-  2: 'curso',
-  3: 'curso',
-  4: 'curso',
-  5: 'ok',
-  6: 'off',
+export const ESTADO_TONO: Record<EstadoOrden, string> = {
+  creado: 'nuevo',
+  aceptado: 'curso',
+  'pago-reportado': 'curso',
+  entregado: 'curso',
+  completado: 'ok',
+  cancelado: 'off',
 };
 
-export const statusBadge = (status: Status) => h('span', { class: `badge badge-${STATUS_TONE[status]}` }, STATUS_LABEL[status]);
+export const estadoBadge = (e: EstadoOrden) => h('span', { class: `badge badge-${ESTADO_TONO[e]}` }, etiquetaEstado(e));
 
 /** Dirección corta, enlazada al perfil público. */
-export function personLink(address: Hex, me: Hex | null): HTMLElement {
+export function personLink(address: Direccion, me: Direccion | null): HTMLElement {
   const isMe = me !== null && address.toLowerCase() === me.toLowerCase();
   return h('a', { class: 'person', href: `#/v/${address}` },
     h('span', { class: 'person-name mono' }, shortAddress(address), isMe ? ' (tú)' : ''),
@@ -29,12 +28,18 @@ export const explorerAddress = (a: string) => `${EXPLORER_URL}/address/${a}`;
 
 export const external = (href: string, text: Child) => h('a', { href, target: '_blank', rel: 'noopener noreferrer' }, text);
 
-export function reputationBlock(r: Reputation): HTMLElement {
+/** Una línea corta para tarjetas: «3 completados de 4 aceptados». */
+export function lineaReputacion(r: Reputacion): string {
+  if (r.aceptados === 0) return 'Sin pedidos completados todavía';
+  return `${r.completados} completado${r.completados === 1 ? '' : 's'} de ${r.aceptados} aceptado${r.aceptados === 1 ? '' : 's'}`;
+}
+
+export function reputationBlock(r: Reputacion): HTMLElement {
   const stat = (value: string, label: string) => h('div', { class: 'stat' }, h('strong', null, value), h('span', null, label));
   return h('div', { class: 'stats' },
-    stat(String(r.completed), 'completados'),
-    stat(r.completionRate === null ? '—' : `${r.completionRate} %`, r.accepted === 0 ? 'sin aceptados' : `de ${r.accepted} aceptados`),
-    stat(String(r.cancelled), 'cancelados por comprador'),
+    stat(String(r.completados), 'completados'),
+    stat(r.tasa === null ? '—' : `${r.tasa} %`, r.aceptados === 0 ? 'sin aceptados' : `de ${r.aceptados} aceptados`),
+    stat(String(r.cancelados), 'cancelados por comprador'),
   );
 }
 

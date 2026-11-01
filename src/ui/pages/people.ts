@@ -1,19 +1,14 @@
-import type { Hex } from '../../contract/campuschain';
 import { CAMPUSCHAIN_ADDRESS, CHAIN_ID, isContractConfigured } from '../../contract/config';
 import { shortAddress } from '../../lib/format';
 import { formatMxn } from '../../lib/money';
-import { reputationOf } from '../../lib/reputation';
+import type { Direccion as Hex } from '../../shared/types';
 import type { Ctx } from '../context';
 import { h } from '../dom';
 import { copyButton, empty, explorerAddress, external, reputationBlock, section } from '../parts';
 
 /** #/v/:address — perfil público y reputación del vendedor. */
 export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
-  const [stats, products] = await Promise.all([
-    ctx.hub.reads.stats(address),
-    ctx.hub.reads.sellerProducts(address),
-  ]);
-  const available = products.filter((p) => p.available).reverse();
+  const [rep, available] = await Promise.all([ctx.data.reputacion(address), ctx.data.productosDe(address)]);
   const isMe = ctx.me !== null && address.toLowerCase() === ctx.me.toLowerCase();
   return h('div', null,
     h('a', { class: 'back', href: '#/' }, '← Catálogo'),
@@ -22,13 +17,13 @@ export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
       h('p', { class: 'small' }, external(explorerAddress(address), 'Ver en el explorador')),
     ),
     section('Reputación',
-      reputationBlock(reputationOf(stats)),
+      reputationBlock(rep),
       h('p', { class: 'muted small' }, 'Calculado solo con lo que registró el contrato: es un indicador del historial, no una garantía de honestidad.'),
     ),
     section('Productos disponibles', available.length
       ? h('div', { class: 'list' }, ...available.map((p) => h('a', { class: 'card row', href: `#/p/${p.id}` },
-        h('div', { class: 'row-main' }, h('strong', null, p.name), h('span', { class: 'muted small' }, `📍 ${p.pickupPoint}`)),
-        h('div', { class: 'row-side' }, h('strong', null, formatMxn(p.priceCents))))))
+        h('div', { class: 'row-main' }, h('strong', null, p.titulo), h('span', { class: 'muted small' }, `📍 ${p.puntoEntrega}`)),
+        h('div', { class: 'row-side' }, h('strong', null, formatMxn(BigInt(p.precioCentavos)))))))
       : empty('No tiene productos disponibles.')),
   );
 }
@@ -48,7 +43,7 @@ export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
 
   const sesion = h('div', { class: 'card' },
     h('p', { class: 'small muted' }, 'Sesión iniciada como:'),
-    h('p', null, h('strong', null, ctx.usuario.email ?? '')),
+    h('p', null, h('strong', null, ctx.usuario.email)),
     h('button', { class: 'btn btn-small', type: 'button', onclick: () => ctx.salir() }, 'Cerrar sesión'),
   );
 

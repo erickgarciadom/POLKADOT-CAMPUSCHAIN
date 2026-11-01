@@ -1,41 +1,42 @@
-import { CATEGORIES, computeOrderHash, LIMITS, newOrderId, type Product } from '../../contract/campuschain';
+import { CATEGORIES, LIMITS } from '../../contract/campuschain';
 import { formatMxn } from '../../lib/money';
-import { reputationLine, reputationOf } from '../../lib/reputation';
-import { productosBorrados } from '../../firebase/borrados';
+import type { Producto, Reputacion } from '../../shared/types';
 import type { Ctx } from '../context';
 import { deleteButton, esMio } from '../deleteProduct';
 import { h, replace } from '../dom';
-import { empty, personLink, reputationBlock } from '../parts';
+import { empty, lineaReputacion, personLink, reputationBlock } from '../parts';
+
+const precio = (p: Pick<Producto, 'precioCentavos'>, cantidad = 1) => formatMxn(BigInt(p.precioCentavos) * BigInt(cantidad));
 
 /** #/ — productos disponibles, con búsqueda y categorías. */
 export async function catalogPage(ctx: Ctx): Promise<HTMLElement> {
-  const products = (await ctx.hub.reads.products()).filter((p) => p.available).reverse();
-  const sellers = [...new Set(products.map((p) => p.seller.toLowerCase()))];
-  const stats = new Map(await Promise.all(sellers.map(async (s) => [s, reputationOf(await ctx.hub.reads.stats(s as `0x${string}`))] as const)));
+  const products = await ctx.data.catalogo();
+  const sellers = [...new Set(products.map((p) => p.vendedor.toLowerCase()))];
+  const stats = new Map<string, Reputacion>(await Promise.all(sellers.map(async (s) => [s, await ctx.data.reputacion(s as `0x${string}`)] as const)));
 
   // Las categorías de la app primero y después cualquier otra que ya esté en el contrato.
-  const categories = [...new Set([...CATEGORIES, ...products.map((p) => p.category).filter(Boolean)])];
+  const categories = [...new Set([...CATEGORIES, ...products.map((p) => p.categoria).filter(Boolean)])];
 
   let query = '';
   let category: string | null = null;
   const list = h('div', { class: 'grid' });
 
-  const card = (p: Product) => h('a', { class: 'card product', href: `#/p/${p.id}` },
+  const card = (p: Producto) => h('a', { class: 'card product', href: `#/p/${p.id}` },
     h('div', { class: 'product-top' },
-      h('span', { class: 'chip' }, p.category || 'Otro'),
-      h('strong', { class: 'price' }, formatMxn(p.priceCents)),
+      h('span', { class: 'chip' }, p.categoria || 'Otro'),
+      h('strong', { class: 'price' }, precio(p)),
     ),
-    h('h3', null, p.name),
-    p.description ? h('p', { class: 'muted clamp' }, p.description) : null,
-    h('p', { class: 'small' }, '📍 ', p.pickupPoint),
-    h('p', { class: 'small muted' }, 'Vendedor · ', reputationLine(stats.get(p.seller.toLowerCase())!)),
+    h('h3', null, p.titulo),
+    p.descripcion ? h('p', { class: 'muted clamp' }, p.descripcion) : null,
+    h('p', { class: 'small' }, '📍 ', p.puntoEntrega),
+    h('p', { class: 'small muted' }, 'Vendedor · ', lineaReputacion(stats.get(p.vendedor.toLowerCase())!)),
   );
 
   const draw = () => {
     const q = query.trim().toLowerCase();
     const shown = products.filter((p) =>
-      (category === null || p.category === category)
-      && (q === '' || `${p.name} ${p.description} ${p.pickupPoint}`.toLowerCase().includes(q)));
+      (category === null || p.categoria === category)
+      && (q === '' || `${p.titulo} ${p.descripcion} ${p.puntoEntrega}`.toLowerCase().includes(q)));
     replace(list, ...(shown.length ? shown.map(card) : [empty(products.length ? 'Nada coincide con tu búsqueda.' : 'Todavía no hay productos. ¡Publica el primero en Vender!')]));
   };
 
@@ -75,58 +76,29 @@ export async function catalogPage(ctx: Ctx): Promise<HTMLElement> {
 }
 
 /** #/p/:id — detalle del producto y crear pedido. */
-export async function productPage(ctx: Ctx, id: bigint): Promise<HTMLElement> {
-  const p = await ctx.hub.reads.product(id);
-  const rep = reputationOf(await ctx.hub.reads.stats(p.seller));
+export async function productPage(ctx: Ctx, id: string): Promise<HTMLElement> {
+  const p = await ctx.data.producto(id);
+  const rep = await ctx.data.reputacion(p.vendedor);
   const mine = esMio(ctx, p);
-  const borrado = mine && !p.available && (await productosBorrados(ctx.usuario.uid).catch(() => new Set<string>())).has(p.id.toString());
+  const borrado = mine && !p.disponible && (await ctx.data.borrado(p.id));
 
   let quantity = 1;
   const qty = h('span', { class: 'qty-value' }, '1');
-  const total = h('strong', null, formatMxn(p.priceCents));
+  const total = h('strong', null, precio(p));
   const setQty = (n: number) => {
     quantity = Math.min(LIMITS.maxQuantity, Math.max(1, n));
     qty.textContent = String(quantity);
-    total.textContent = formatMxn(p.priceCents * BigInt(quantity));
+    total.textContent = precio(p, quantity);
   };
 
   const order = async () => {
     if (!(await ctx.ensureAccount())) return;
-    const buyer = ctx.hub.getState().account!.h160;
-    // El id y el hash los pone la app; el contrato los guarda tal cual.
-    const orderId = newOrderId();
-    const orderHash = computeOrderHash({
-      id: orderId,
-      productId: p.id,
-      quantity,
-      totalCents: p.priceCents * BigInt(quantity),
-      buyer,
-      seller: p.seller,
-    });
-    const r = await ctx.write({
-      fn: 'createOrder',
-      args: [orderId, p.id, BigInt(quantity), orderHash],
-      title: 'Crear pedido',
-      landed: async () => {
-        await ctx.hub.reads.order(orderId);
-        return true;
-      },
-      rejected: 'El contrato rechazó el pedido.',
-      saved: 'Pedido creado y registrado en la blockchain.',
-    });
-    if (r.ok) ctx.go(`#/o/${orderId}`);
+    const r = await ctx.data.crearPedido(p.id, quantity);
+    if (r.ok && r.orderId) ctx.go(`#/o/${r.orderId}`);
   };
 
   const toggle = async () => {
-    const next = !p.available;
-    const r = await ctx.write({
-      fn: 'setAvailable',
-      args: [p.id, next],
-      title: next ? 'Reactivar producto' : 'Pausar producto',
-      landed: async () => (await ctx.hub.reads.product(p.id)).available === next,
-      rejected: 'El contrato rechazó el cambio.',
-      saved: next ? 'Producto disponible otra vez.' : 'Producto pausado.',
-    });
+    const r = await ctx.data.cambiarDisponible(p.id, !p.disponible);
     if (r.ok) ctx.refresh();
   };
 
@@ -134,18 +106,18 @@ export async function productPage(ctx: Ctx, id: bigint): Promise<HTMLElement> {
     h('a', { class: 'back', href: '#/' }, '← Catálogo'),
     h('div', { class: 'card' },
       h('div', { class: 'product-top' },
-        h('span', { class: 'chip' }, p.category || 'Otro'),
-        p.available ? null : h('span', { class: 'badge badge-off' }, borrado ? 'Borrado' : 'Pausado'),
+        h('span', { class: 'chip' }, p.categoria || 'Otro'),
+        p.disponible ? null : h('span', { class: 'badge badge-off' }, borrado ? 'Borrado' : 'Pausado'),
       ),
-      h('h1', null, p.name),
-      p.description ? h('p', null, p.description) : null,
-      h('p', { class: 'price big' }, formatMxn(p.priceCents)),
-      h('p', null, '📍 Punto de entrega: ', h('strong', null, p.pickupPoint)),
+      h('h1', null, p.titulo),
+      p.descripcion ? h('p', null, p.descripcion) : null,
+      h('p', { class: 'price big' }, precio(p)),
+      h('p', null, '📍 Punto de entrega: ', h('strong', null, p.puntoEntrega)),
       h('p', { class: 'muted small' }, `Producto #${p.id} · registrado en el contrato`),
     ),
     h('div', { class: 'card' },
       h('h2', null, 'Vendedor'),
-      h('p', null, personLink(p.seller, ctx.me)),
+      h('p', null, personLink(p.vendedor, ctx.me)),
       reputationBlock(rep),
       h('p', { class: 'muted small' }, 'La reputación se calcula solo con pedidos registrados en el contrato. Es un indicador del historial, no una garantía.'),
     ),
@@ -155,10 +127,10 @@ export async function productPage(ctx: Ctx, id: bigint): Promise<HTMLElement> {
       ? h('div', { class: 'card' },
         h('p', null, 'Es tu producto.'),
         h('p', null,
-          h('button', { class: 'btn', onclick: toggle }, p.available ? 'Pausar producto' : 'Reactivar producto'),
+          h('button', { class: 'btn', onclick: toggle }, p.disponible ? 'Pausar producto' : 'Reactivar producto'),
           ' ',
           deleteButton(ctx, p, () => ctx.go('#/vender'))))
-      : p.available
+      : p.disponible
         ? h('div', { class: 'card' },
           h('h2', null, 'Hacer pedido'),
           h('div', { class: 'qty' },

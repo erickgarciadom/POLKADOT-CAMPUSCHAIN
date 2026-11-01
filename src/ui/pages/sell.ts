@@ -1,6 +1,6 @@
-import { CATEGORIES, LIMITS, type Product } from '../../contract/campuschain';
-import { productosBorrados } from '../../firebase/borrados';
+import { CATEGORIES, LIMITS } from '../../contract/campuschain';
 import { formatMxn, parsePriceCents } from '../../lib/money';
+import type { Producto } from '../../shared/types';
 import type { Ctx } from '../context';
 import { deleteButton } from '../deleteProduct';
 import { h } from '../dom';
@@ -15,54 +15,39 @@ export async function sellPage(ctx: Ctx): Promise<HTMLElement> {
     return h('div', null, h('h1', null, 'Vender'),
       empty('Conecta tu cuenta para publicar productos y atender pedidos.', h('button', { class: 'btn btn-primary', onclick: () => ctx.ensureAccount().then((ok) => ok && ctx.refresh()) }, 'Conectar cuenta')));
   }
-  const me = ctx.me;
-  const [orders, all, borrados] = await Promise.all([
-    ctx.hub.reads.sellerOrders(me),
-    ctx.hub.reads.sellerProducts(me),
-    productosBorrados(ctx.usuario.uid).catch(() => new Set<string>()),
-  ]);
-  // Los borrados siguen en el contrato (no disponibles); se quitan de la lista.
-  const products = all.filter((p) => p.available || !borrados.has(p.id.toString()));
+  const [orders, products] = await Promise.all([ctx.data.pedidosRecibidos(), ctx.data.misProductos()]);
 
   return h('div', null,
     h('h1', null, 'Vender'),
-    section('Pedidos recibidos', await orderList(ctx, orders, 'Todavía no recibes pedidos.')),
+    section('Pedidos recibidos', orderList(ctx, orders, 'Todavía no recibes pedidos.')),
     section('Mis productos', products.length
-      ? h('div', { class: 'list' }, ...[...products].reverse().map((p) => productRow(ctx, p)))
+      ? h('div', { class: 'list' }, ...products.map((p) => productRow(ctx, p)))
       : empty('Todavía no publicas productos.')),
-    section('Publicar producto', publishForm(ctx, all.length)),
+    section('Publicar producto', publishForm(ctx)),
     h('p', { class: 'muted small' }, 'Todo lo que publicas queda en un contrato público. No pongas tu nombre completo, teléfono ni dirección: usa un punto general del campus.'),
   );
 }
 
-function productRow(ctx: Ctx, p: Product): HTMLElement {
+function productRow(ctx: Ctx, p: Producto): HTMLElement {
   const toggle = async (e: Event) => {
     e.preventDefault();
-    const next = !p.available;
-    const r = await ctx.write({
-      fn: 'setAvailable',
-      args: [p.id, next],
-      title: next ? 'Reactivar producto' : 'Pausar producto',
-      landed: async () => (await ctx.hub.reads.product(p.id)).available === next,
-      rejected: 'El contrato rechazó el cambio.',
-      saved: next ? 'Producto disponible otra vez.' : 'Producto pausado.',
-    });
+    const r = await ctx.data.cambiarDisponible(p.id, !p.disponible);
     if (r.ok) ctx.refresh();
   };
   return h('div', { class: 'card row' },
     h('a', { class: 'row-main', href: `#/p/${p.id}` },
-      h('strong', null, p.name),
-      h('span', { class: 'muted small' }, `${formatMxn(p.priceCents)} · ${p.category || 'Otro'} · 📍 ${p.pickupPoint}`),
+      h('strong', null, p.titulo),
+      h('span', { class: 'muted small' }, `${formatMxn(BigInt(p.precioCentavos))} · ${p.categoria || 'Otro'} · 📍 ${p.puntoEntrega}`),
     ),
     h('div', { class: 'row-side' },
-      p.available ? h('span', { class: 'badge badge-ok' }, 'Disponible') : h('span', { class: 'badge badge-off' }, 'Pausado'),
-      h('button', { class: 'btn btn-small', onclick: toggle }, p.available ? 'Pausar' : 'Reactivar'),
+      p.disponible ? h('span', { class: 'badge badge-ok' }, 'Disponible') : h('span', { class: 'badge badge-off' }, 'Pausado'),
+      h('button', { class: 'btn btn-small', onclick: toggle }, p.disponible ? 'Pausar' : 'Reactivar'),
       deleteButton(ctx, p, () => ctx.refresh(), true),
     ),
   );
 }
 
-function publishForm(ctx: Ctx, count: number): HTMLElement {
+function publishForm(ctx: Ctx): HTMLElement {
   const error = h('p', { class: 'bad small', role: 'alert' });
   const field = (label: string, input: HTMLElement, hint?: string) =>
     h('label', { class: 'field' }, h('span', null, label), input, hint ? h('span', { class: 'muted small' }, hint) : null);
@@ -88,15 +73,7 @@ function publishForm(ctx: Ctx, count: number): HTMLElement {
     if (cents === null || cents > BigInt(LIMITS.maxPriceCents)) return void (error.textContent = 'Escribe un precio válido en pesos, por ejemplo 35 o 35.50.');
     if (!pk || bytes(pk) > LIMITS.pickup) return void (error.textContent = 'Escribe un punto general de entrega dentro del campus.');
     if (!(await ctx.ensureAccount())) return;
-    const me = ctx.hub.getState().account!.h160;
-    const r = await ctx.write({
-      fn: 'createProduct',
-      args: [n, desc, category.value, pk, cents],
-      title: 'Publicar producto',
-      landed: async () => (await ctx.hub.reads.sellerProducts(me)).length > count,
-      rejected: 'El contrato rechazó el producto.',
-      saved: 'Producto publicado en el catálogo.',
-    });
+    const r = await ctx.data.publicarProducto({ titulo: n, descripcion: desc, categoria: category.value, puntoEntrega: pk, precioCentavos: cents.toString() });
     if (r.ok) ctx.refresh();
   };
 

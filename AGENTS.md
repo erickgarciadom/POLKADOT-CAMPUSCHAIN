@@ -48,8 +48,20 @@ nuevo, con otra dirección y otra ABI, y hay que acordarlo con el equipo.
 
 ## SDK
 - Toda la conexión con el Host está en `src/hub/hub.ts` (`createHub()`).
-- Antes de cada `.tx()` se simula con `.query()`. Una firma a la vez. Ninguna pantalla llama `.tx()`:
-  las pantallas usan `ctx.write()`.
+- Antes de cada `.tx()` se simula con `.query()`. Una firma a la vez. Ninguna pantalla llama `.tx()`
+  ni `hub.reads`: las pantallas usan `ctx.data` (interfaz `CampusData` de `src/shared/datasource.ts`).
+
+## Equipo y carpetas
+- `src/shared/` es el contrato de datos (tipos JSON, `CampusData`, estados). Cambios solo en PRs
+  chicos a main que revisen los dos desarrolladores.
+- Desarrollador 1 (rama `frontend-ui`): `src/ui/`, `src/mocks/`, `src/styles.css`, `lib/format`, `lib/money`.
+- Desarrollador 2 (rama `backend-data`): `src/data/`, `src/contract/`, `src/hub/`, `src/firebase/`,
+  el resto de `src/lib/` y `firestore.rules`.
+- `src/data/realSource.ts` implementa `CampusData` con el contrato y Firebase; `src/mocks/mockSource.ts`
+  con datos en memoria. `pnpm dev --mode mock` usa los mocks (sin Host, red ni Firebase); `pnpm build`
+  no los incluye.
+- Montos en `shared/` van como texto en centavos de MXN. `stock` e `imagenUrl` son null: el contrato
+  no los tiene.
 
 ## Vite
 - base: './' en vite.config.js.
@@ -64,6 +76,7 @@ nuevo, con otra dirección y otra ABI, y hay que acordarlo con el equipo.
 
 ## Comandos (desde campuschain/)
 - pnpm dev
+- pnpm dev --mode mock (interfaz con datos de ejemplo)
 - pnpm test
 - pnpm test:red (contra el contrato desplegado, necesita red)
 - pnpm build
