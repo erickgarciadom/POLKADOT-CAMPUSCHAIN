@@ -50,6 +50,12 @@ describe('colores de styles.css', () => {
     });
   }
 
+  it('el menú va en una columna a la izquierda del contenido', () => {
+    const areas = [...css.matchAll(/grid-template-areas:\s*([^;]+);/g)].map((m) => m[1]!);
+    expect(areas).toContain('"top top" "side banner" "side main"');
+    expect(areas.some((a) => /main side|banner side/.test(a))).toBe(false);
+  });
+
   it('la fuente es Plus Jakarta Sans, desde un archivo del bundle', () => {
     expect(css).toMatch(/--font:\s*"Plus Jakarta Sans"/);
     expect(css).toMatch(/url\("\.\/fonts\/plus-jakarta-sans-[\w-]+\.woff2"\)/);

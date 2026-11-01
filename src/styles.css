@@ -72,31 +72,42 @@ p { margin: 0.35rem 0; }
 strong { font-weight: 700; }
 
 #app {
-  max-width: 720px;
-  margin: 0 auto;
   min-height: 100dvh;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 /* ---------------------------------------------------------------- marco */
 
-/* Cabecera y pestañas van juntas arriba: abajo la barra del Host de la Polkadot App las tapa. */
-.chrome {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+/*
+ * Menú en una columna a la izquierda, en todos los tamaños. En el celular es un riel angosto
+ * (icono arriba, nombre abajo); en pantallas anchas, una columna con el nombre junto al icono.
+ * La cabecera va arriba de todo: abajo la barra del Host de la Polkadot App tapa.
+ * .chrome se «disuelve» para que cabecera y menú se acomoden en la cuadrícula de #app.
+ */
+#app {
+  max-width: none;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas: "top top" "side banner" "side main";
+  --top-h: calc(51px + env(safe-area-inset-top));
 }
+/* Sin menú (pantalla de conectar) el contenido usa todo el ancho. */
+#app:has(> .chrome > .tabs[hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "banner" "main"; }
+
+.chrome { display: contents; }
 
 .top {
-  position: relative;
+  grid-area: top;
+  position: sticky; top: 0; z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: calc(10px + env(safe-area-inset-top)) 16px 6px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
 }
 
 .brand {
@@ -104,16 +115,33 @@ strong { font-weight: 700; }
   font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em;
   text-decoration: none;
 }
+/* Logo: palomita dibujada con dos bordes, sin caracteres. */
 .logo {
   display: grid; place-items: center;
   width: 30px; height: 30px; border-radius: var(--r) var(--cut-s);
-  background: var(--accent); color: var(--accent-ink); font-size: 16px; font-weight: 700;
+  background: var(--accent);
+}
+.logo::before {
+  content: "";
+  width: 12px; height: 6px;
+  border-left: 3px solid var(--accent-ink);
+  border-bottom: 3px solid var(--accent-ink);
+  transform: translateY(-2px) rotate(-45deg);
 }
 .account { font-size: 0.82rem; text-decoration: none; font-family: var(--font-mono); }
 .account.on { color: var(--icon); }
+.account.on::before {
+  content: "";
+  display: inline-block;
+  width: 7px; height: 7px; margin-right: 7px;
+  border-radius: 50%;
+  background: var(--icon);
+  vertical-align: middle;
+}
 
 .banner {
-  margin: 12px 16px 0;
+  grid-area: banner;
+  margin: 12px 16px 0 12px;
   padding: 10px 12px;
   border-radius: var(--r);
   background: var(--alert);
@@ -122,62 +150,58 @@ strong { font-weight: 700; }
   font-weight: 600;
 }
 
-.main { padding: 16px 16px 32px; container-type: inline-size; }
+.main { grid-area: main; min-width: 0; padding: 16px 16px 32px 12px; container-type: inline-size; }
+#app:has(> .chrome > .tabs[hidden]) .main { padding-left: 16px; }
 
 .tabs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
-  padding: 0 4px 6px;
+  grid-area: side;
+  grid-row: 2 / 4;
+  align-self: start;
+  position: sticky; top: var(--top-h);
+  display: flex; flex-direction: column; gap: 4px;
+  min-height: calc(100dvh - var(--top-h));
+  padding: 12px 6px;
+  border-right: 1px solid var(--line);
 }
 .tabs[hidden] { display: none; }
 .tab {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 6px 2px; border-radius: var(--r);
-  font-size: 0.72rem; text-decoration: none; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 2px; border-radius: var(--r);
+  font-size: 0.68rem; line-height: 1.2; text-align: center;
+  text-decoration: none; color: var(--muted);
 }
 .tab-icon { display: grid; place-items: center; line-height: 0; color: var(--icon); }
 .tab-icon svg { width: 22px; height: 22px; }
-.tab.on { color: var(--text); font-weight: 600; background: var(--surface); box-shadow: inset 0 -2px 0 var(--accent); }
-.tab.on .tab-icon { color: var(--accent); }
+.tab:hover { background: var(--surface); color: var(--text); }
+.tab.on, .tab.on:hover { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.tab.on .tab-icon { color: var(--accent-ink); }
 
-/*
- * Pantallas anchas: el menú pasa a una columna a la derecha. .chrome se «disuelve» para que la
- * cabecera y el menú se acomoden en la cuadrícula de #app. En el celular siguen arriba.
- */
+/* Pantallas anchas: columna con nombres a la izquierda y el contenido centrado. */
 @media (min-width: 880px) {
   #app {
-    max-width: none;
-    display: grid;
-    grid-template-columns: minmax(0, 880px) 220px;
-    grid-template-rows: auto auto 1fr;
-    grid-template-areas: "top top" "banner side" "main side";
+    grid-template-columns: 220px minmax(0, 880px);
     justify-content: center;
     column-gap: 36px;
   }
-  .chrome { display: contents; }
+  #app:has(> .chrome > .tabs[hidden]) { grid-template-columns: minmax(0, 880px); }
   /* El fondo de la cabecera llega de orilla a orilla aunque su contenido vaya en la columna. */
   .top {
-    grid-area: top;
-    position: sticky; top: 0; z-index: 5;
     padding: 14px 0;
+    background: none;
+    border-bottom: 0;
     border-image: conic-gradient(color-mix(in srgb, var(--bg) 90%, transparent) 0 0) fill 0 // 0 100vmax;
-    backdrop-filter: blur(10px);
   }
   .top::after {
     content: "";
     position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
     background: var(--line);
   }
-  .banner { grid-area: banner; margin: 20px 0 0; }
-  .main { grid-area: main; min-width: 0; padding: 24px 0 48px; }
+  .banner { margin: 20px 0 0; }
+  .main, #app:has(> .chrome > .tabs[hidden]) .main { padding: 24px 0 48px; }
 
   .tabs {
-    grid-area: side;
-    grid-row: 2 / 4;
-    align-self: start;
-    position: sticky; top: 76px;
-    display: flex; flex-direction: column; gap: 4px;
+    top: 76px;
+    min-height: 0;
     margin-top: 24px;
     padding: 10px;
     background: var(--surface);
@@ -187,11 +211,9 @@ strong { font-weight: 700; }
   .tab {
     flex-direction: row; gap: 12px;
     padding: 10px 12px;
-    font-size: 0.95rem; color: var(--text);
+    font-size: 0.95rem; text-align: left; color: var(--text);
   }
   .tab:hover { background: var(--surface-2); }
-  .tab.on, .tab.on:hover { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
-  .tab.on .tab-icon { color: var(--accent-ink); }
   .tab-icon svg { width: 20px; height: 20px; }
 }
 
@@ -232,6 +254,14 @@ strong { font-weight: 700; }
 .attention { color: var(--alert); font-weight: 700; }
 
 .back { display: inline-block; margin: 0 0 12px; color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+.back::before {
+  content: "";
+  display: inline-block;
+  width: 7px; height: 7px; margin: 0 8px 1px 2px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
 .back:hover { color: var(--text); }
 
 .muted { color: var(--muted); }
@@ -452,7 +482,11 @@ textarea.input { resize: vertical; }
 }
 .tx-steps { list-style: none; margin: 0 0 12px; padding: 0; }
 .tx-steps li { display: flex; align-items: center; gap: 10px; padding: 5px 0; color: var(--muted); }
-.tx-icon { width: 1.2em; text-align: center; }
+/* Estado de cada paso: círculo vacío (pendiente), lleno (hecho), con halo (actual), cuadro (falló). */
+.tx-icon { flex-shrink: 0; width: 12px; height: 12px; border: 2px solid currentColor; border-radius: 50%; }
+.tx-hecho .tx-icon { background: currentColor; }
+.tx-actual .tx-icon { background: currentColor; box-shadow: 0 0 0 4px var(--accent-glow); }
+.tx-fallo .tx-icon { background: currentColor; border-radius: 2px; }
 .tx-hecho { color: var(--icon) !important; }
 .tx-actual { color: var(--accent) !important; font-weight: 600; }
 .tx-fallo { color: var(--alert) !important; }
@@ -533,6 +567,13 @@ textarea.input { resize: vertical; }
   background: var(--bg);
 }
 .main[data-vista="pedidos"] .row:hover { border-color: var(--icon); }
+@container (max-width: 420px) {
+  .main[data-vista="pedidos"] .row { flex-direction: column; }
+  .main[data-vista="pedidos"] .row-side {
+    flex-direction: row; justify-content: space-between; align-items: center;
+    min-width: 0; border-left: 0; border-top: 2px dashed var(--line);
+  }
+}
 
 /* ---- Pedido: en ancho, el detalle y el historial a la izquierda, «Te toca» fijo a la derecha. */
 .main[data-vista="pedido"] .resumen h1 a { text-decoration: none; }
