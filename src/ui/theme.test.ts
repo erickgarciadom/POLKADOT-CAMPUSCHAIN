@@ -5,15 +5,11 @@ import { describe, expect, it } from 'vitest';
 declare const process: { getBuiltinModule(id: 'node:fs'): { readFileSync(path: URL, encoding: 'utf8'): string } };
 const css = process.getBuiltinModule('node:fs').readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
-/** Variables `--x: #rrggbb;` del primer bloque `:root { … }` a partir de `desde`. */
-function tokens(desde: number): Record<string, string> {
-  const start = css.indexOf(':root {', desde);
-  const block = css.slice(start, css.indexOf('}', start));
-  return Object.fromEntries([...block.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6});/gi)].map((m) => [m[1]!, m[2]!.toLowerCase()]));
-}
-
-const claro = tokens(0);
-const oscuro = tokens(css.indexOf('@media (prefers-color-scheme: dark)'));
+/** Variables `--x: #rrggbb;` del bloque `:root { … }`. */
+const start = css.indexOf(':root {');
+const t: Record<string, string> = Object.fromEntries(
+  [...css.slice(start, css.indexOf('}', start)).matchAll(/--([\w-]+):\s*(#[0-9a-f]{6});/gi)].map((m) => [m[1]!, m[2]!.toLowerCase()]),
+);
 
 // WCAG 2.1: luminancia relativa y razón de contraste.
 const canal = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
@@ -29,23 +25,35 @@ const contraste = (a: string, b: string) => {
 /** Texto sobre fondo que la interfaz usa de verdad. Todos con AA para texto normal (4.5:1). */
 const PARES: [texto: string, fondo: string][] = [
   ['text', 'bg'], ['text', 'surface'], ['text', 'surface-2'],
-  ['muted', 'bg'], ['muted', 'surface'], ['muted', 'surface-2'],
-  ['accent-ink', 'accent'], ['accent-text', 'accent-soft'], ['accent-text', 'bg'], ['accent-text', 'surface'],
-  ['tag-ink', 'tag'],
-  ['ok', 'ok-soft'], ['ok', 'surface'], ['warn', 'warn-soft'], ['bad', 'bad-soft'], ['bad', 'surface'], ['info', 'info-soft'],
-  ['bg', 'text'],
+  ['muted', 'bg'], ['muted', 'surface'],
+  ['accent-ink', 'accent'], ['accent', 'bg'], ['accent', 'surface'],
+  ['alert-ink', 'alert'], ['alert', 'bg'], ['alert', 'surface'],
+  ['icon-ink', 'icon'], ['icon', 'bg'], ['icon', 'surface'], ['icon', 'surface-2'], ['icon', 'icon-soft'],
 ];
 
 describe('colores de styles.css', () => {
-  for (const [nombre, t] of [['claro', claro], ['oscuro', oscuro]] as const) {
-    it(`modo ${nombre}: define todos los colores`, () => {
-      expect(Object.keys(t).length).toBeGreaterThanOrEqual(20);
-      expect(Object.keys(t).sort()).toEqual(Object.keys(claro).sort());
+  it('usa la paleta acordada', () => {
+    expect(t).toMatchObject({
+      bg: '#140c2e', // fondo principal
+      surface: '#1e153d', // tarjetas y bloques
+      accent: '#ffa959', // comprar/vender y saldos
+      alert: '#ff6b2c', // alertas y acciones rápidas
+      icon: '#a28bfa', // iconos y badges
+      text: '#ffffff', // títulos y precios
+      muted: '#8b82a8', // descripciones secundarias
     });
-    for (const [texto, fondo] of PARES) {
-      it(`modo ${nombre}: ${texto} sobre ${fondo} tiene contraste AA`, () => {
-        expect(contraste(t[texto]!, t[fondo]!)).toBeGreaterThanOrEqual(4.5);
-      });
-    }
+  });
+
+  for (const [texto, fondo] of PARES) {
+    it(`${texto} sobre ${fondo} tiene contraste AA`, () => {
+      expect(contraste(t[texto]!, t[fondo]!)).toBeGreaterThanOrEqual(4.5);
+    });
   }
+
+  it('la fuente es Plus Jakarta Sans, desde un archivo del bundle', () => {
+    expect(css).toMatch(/--font:\s*"Plus Jakarta Sans"/);
+    expect(css).toMatch(/url\("\.\/fonts\/plus-jakarta-sans-[\w-]+\.woff2"\)/);
+    expect(css).not.toMatch(/url\(["']?https?:/);
+    expect(css).not.toMatch(/@import/);
+  });
 });
