@@ -1,0 +1,73 @@
+import type { Hex } from '../../contract/campuschain';
+import { CAMPUSCHAIN_ADDRESS, CHAIN_ID, isContractConfigured } from '../../contract/config';
+import { shortAddress } from '../../lib/format';
+import { formatMxn } from '../../lib/money';
+import { reputationOf } from '../../lib/reputation';
+import type { Ctx } from '../context';
+import { h } from '../dom';
+import { copyButton, empty, explorerAddress, external, reputationBlock, section } from '../parts';
+
+/** #/v/:address — perfil público y reputación del vendedor. */
+export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
+  const [stats, products] = await Promise.all([
+    ctx.hub.reads.stats(address),
+    ctx.hub.reads.sellerProducts(address),
+  ]);
+  const available = products.filter((p) => p.available).reverse();
+  const isMe = ctx.me !== null && address.toLowerCase() === ctx.me.toLowerCase();
+  return h('div', null,
+    h('a', { class: 'back', href: '#/' }, '← Catálogo'),
+    h('div', { class: 'card' },
+      h('h1', { class: 'mono' }, shortAddress(address), isMe ? ' (tú)' : ''),
+      h('p', { class: 'small' }, external(explorerAddress(address), 'Ver en el explorador')),
+    ),
+    section('Reputación',
+      reputationBlock(reputationOf(stats)),
+      h('p', { class: 'muted small' }, 'Calculado solo con lo que registró el contrato: es un indicador del historial, no una garantía de honestidad.'),
+    ),
+    section('Productos disponibles', available.length
+      ? h('div', { class: 'list' }, ...available.map((p) => h('a', { class: 'card row', href: `#/p/${p.id}` },
+        h('div', { class: 'row-main' }, h('strong', null, p.name), h('span', { class: 'muted small' }, `📍 ${p.pickupPoint}`)),
+        h('div', { class: 'row-side' }, h('strong', null, formatMxn(p.priceCents))))))
+      : empty('No tiene productos disponibles.')),
+  );
+}
+
+/** #/cuenta — conectar, tus direcciones (la SS58 para pedir PAS) y datos de la red. */
+export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
+  const state = ctx.hub.getState();
+  const network = section('Red y contrato',
+    h('dl', { class: 'facts' },
+      h('dt', null, 'Red'), h('dd', null, `Products Devnet · chainId ${CHAIN_ID}`),
+      h('dt', null, 'Contrato'), h('dd', null, isContractConfigured()
+        ? external(explorerAddress(CAMPUSCHAIN_ADDRESS), h('span', { class: 'mono' }, shortAddress(CAMPUSCHAIN_ADDRESS)))
+        : 'Sin configurar'),
+      h('dt', null, 'Versión'), h('dd', null, `v${__APP_VERSION__}`),
+    ),
+  );
+
+  if (!ctx.me || !state.account) {
+    return h('div', null, h('h1', null, 'Cuenta'),
+      empty(state.host === 'fuera' ? state.message : 'Conecta tu cuenta de la Polkadot App para comprar y vender.',
+        state.host === 'fuera' ? null : h('button', { class: 'btn btn-primary', onclick: () => ctx.ensureAccount().then((ok) => ok && ctx.refresh()) }, 'Conectar cuenta')),
+      network);
+  }
+
+  const { h160, ss58 } = state.account;
+  return h('div', null,
+    h('h1', null, 'Cuenta'),
+    h('div', { class: 'card' },
+      h('p', { class: 'small muted' }, 'Tu cuenta en esta app (SS58):'),
+      h('p', { class: 'mono small break' }, ss58),
+      h('p', null, copyButton(ss58, 'Copiar dirección SS58')),
+      h('p', { class: 'note' }, '💧 Publicar productos y hacer pedidos guarda datos en el contrato, y eso pide un depósito en PAS aparte del gas. Si te sale «no tiene PAS para el depósito», pega esta dirección en faucet.polkadot.io (Paseo → Asset Hub).'),
+    ),
+    h('div', { class: 'card' },
+      h('p', { class: 'small muted' }, 'La misma cuenta en el contrato (H160):'),
+      h('p', { class: 'mono small break' }, h160),
+      h('p', null, copyButton(h160, 'Copiar dirección 0x'), ' ', h('a', { class: 'btn btn-small', href: `#/v/${h160}` }, 'Ver mi perfil público')),
+      h('p', { class: 'muted small' }, 'Es la que ven compradores y vendedores. No le mandes PAS a esta: usa la SS58.'),
+    ),
+    network,
+  );
+}
