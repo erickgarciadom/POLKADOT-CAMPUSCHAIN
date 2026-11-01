@@ -7,7 +7,7 @@ import type { Sesion } from './shared/types';
 import { mountApp } from './ui/app';
 import { h } from './ui/dom';
 import { authPage } from './ui/pages/auth';
-import { loading } from './ui/parts';
+import { pantallaCarga } from './ui/parts';
 
 const root = document.getElementById('app')!;
 
@@ -36,7 +36,7 @@ if (import.meta.env.MODE === 'mock') {
     void hub.start();
   };
 
-  root.replaceChildren(loading('Revisando tu sesión…'));
+  root.replaceChildren(pantallaCarga('Revisando tu sesión…'));
   sesionGuardada()
     .then((user) => (user ? entrar(user) : root.replaceChildren(authPage(entrar))))
     .catch((error) => root.replaceChildren(

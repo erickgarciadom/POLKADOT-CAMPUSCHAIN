@@ -84,7 +84,7 @@ strong { font-weight: 700; }
  * La cabecera va arriba de todo: abajo la barra del Host de la Polkadot App tapa.
  * .chrome se «disuelve» para que cabecera y menú se acomoden en la cuadrícula de #app.
  */
-#app {
+#app.marco {
   max-width: none;
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr);
@@ -115,19 +115,8 @@ strong { font-weight: 700; }
   font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em;
   text-decoration: none;
 }
-/* Logo: palomita dibujada con dos bordes, sin caracteres. */
-.logo {
-  display: grid; place-items: center;
-  width: 30px; height: 30px; border-radius: var(--r) var(--cut-s);
-  background: var(--accent);
-}
-.logo::before {
-  content: "";
-  width: 12px; height: 6px;
-  border-left: 3px solid var(--accent-ink);
-  border-bottom: 3px solid var(--accent-ink);
-  transform: translateY(-2px) rotate(-45deg);
-}
+/* Logo (src/assets/logo.png): su fondo es el mismo morado de la app, así que solo se ve la marca. */
+.logo { display: block; width: 34px; height: 34px; border-radius: 8px; }
 .account { font-size: 0.82rem; text-decoration: none; font-family: var(--font-mono); }
 .account.on { color: var(--icon); }
 .account.on::before {
@@ -178,7 +167,7 @@ strong { font-weight: 700; }
 
 /* Pantallas anchas: columna con nombres a la izquierda y el contenido centrado. */
 @media (min-width: 880px) {
-  #app {
+  #app.marco {
     grid-template-columns: 220px minmax(0, 880px);
     justify-content: center;
     column-gap: 36px;
@@ -289,6 +278,8 @@ strong { font-weight: 700; }
 
 .empty { text-align: center; padding: 32px 12px; color: var(--muted); }
 .empty .btn { margin-top: 10px; }
+/* En el catálogo el aviso de vacío ocupa toda la fila, no un mosaico. */
+.grid > .empty { grid-column: 1 / -1; }
 
 /* ---------------------------------------------------------------- chips */
 
@@ -430,7 +421,6 @@ textarea.input { resize: vertical; }
 /* Esquinas cortadas donde el navegador las sabe dibujar (con borde y todo). En Safari, redondas. */
 @supports (corner-shape: bevel) {
   .card, .tabs { corner-shape: round bevel round round; }
-  .logo { corner-shape: round bevel; }
   .btn:not(.btn-round) { corner-shape: round bevel; }
   .input { corner-shape: round round bevel round; }
   .chip, .badge { corner-shape: bevel; }
@@ -706,10 +696,37 @@ textarea.input { resize: vertical; }
 /* ---- Conectar y registro: una sola tarjeta centrada. */
 .auth { max-width: 420px; margin: 32px auto; }
 .auth > .brand { margin: 0 0 16px; font-size: 1.4rem; }
+.auth > .brand .logo { width: 44px; height: 44px; }
+/* Registro e inicio de sesión van solos en la página (sin menú): centrados, con margen al borde. */
+#app > .auth { max-width: 452px; padding: 0 16px; margin: max(24px, 10dvh) auto 32px; }
+#app > .bad { max-width: 452px; margin: 24px auto 0; padding: 0 16px; }
+.auth-tabs .btn { white-space: nowrap; }
 .auth .card { padding: 22px; }
 .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
 
+/* ---- Arranque (revisando la sesión): pantalla completa, centrada en cualquier dispositivo. */
+.arranque {
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+.arranque-logo { width: 112px; height: 112px; border-radius: 24px; }
+.arranque-nombre { margin: 8px 0 14px; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+/* Barra indeterminada: un tramo melocotón → lavanda que recorre la pista. */
+.arranque-barra { position: relative; width: min(220px, 60vw); height: 4px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.arranque-barra span {
+  position: absolute; inset: 0 auto 0 0; width: 40%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--icon));
+  animation: avance 1.3s ease-in-out infinite;
+}
+@keyframes avance { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.arranque-texto { margin-top: 12px; color: var(--muted); font-size: 0.92rem; }
+
 @media (prefers-reduced-motion: reduce) {
+  .arranque-barra span { animation-duration: 4s; }
   .spinner { animation-duration: 2.4s; }
   .btn, .input, .product { transition: none; }
   .btn:active:not(:disabled), .main[data-vista="catalogo"] .product:hover { transform: none; }

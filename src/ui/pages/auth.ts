@@ -2,6 +2,7 @@ import type { User } from 'firebase/auth';
 import { iniciarSesion, registrar } from '../../firebase/auth';
 import { DOMINIO_UANL, MIN_PASSWORD, validarCredenciales } from '../../firebase/registro';
 import { h, replace } from '../dom';
+import { logo } from '../parts';
 
 type Modo = 'entrar' | 'registro';
 
@@ -42,7 +43,7 @@ export function authPage(listo: (user: User) => void): HTMLElement {
       h('button', { class: `btn${modo === m ? ' btn-primary' : ''}`, type: 'button', onclick: () => { modo = m; draw(); } }, texto);
 
     replace(root,
-      h('div', { class: 'brand' }, h('span', { class: 'logo', 'aria-hidden': 'true' }), 'CampusChain'),
+      h('div', { class: 'brand' }, logo(), 'CampusChain'),
       h('div', { class: 'card' },
         h('div', { class: 'auth-tabs' }, pestana('entrar', 'Iniciar sesión'), pestana('registro', 'Registrarme')),
         h('form', { class: 'form', onsubmit: submit },

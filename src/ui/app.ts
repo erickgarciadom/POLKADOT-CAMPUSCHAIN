@@ -11,7 +11,7 @@ import { myOrdersPage, orderPage } from './pages/orders';
 import { accountPage, sellerPage } from './pages/people';
 import { salesPage } from './pages/sales';
 import { sellPage } from './pages/sell';
-import { failure, loading } from './parts';
+import { failure, loading, logo } from './parts';
 import { createTxPopup } from './txPopup';
 
 type Route = Ruta & { render: (ctx: Ctx) => Promise<HTMLElement> };
@@ -45,6 +45,8 @@ export function mountApp(root: HTMLElement, hub: Hub, source: CampusData, usuari
     hub.dismiss();
     draw();
   });
+  // .marco activa la cuadrícula con el menú; antes de montar (sesión, registro) #app es un bloque.
+  root.classList.add('marco');
   root.replaceChildren(h('div', { class: 'chrome' }, header, nav), banner, main, toastEl, popup.el);
 
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -101,7 +103,7 @@ export function mountApp(root: HTMLElement, hub: Hub, source: CampusData, usuari
         ? h('button', { class: 'btn btn-small btn-primary', onclick: () => void ensureAccount() }, 'Conectar')
         : h('span', { class: 'account muted small' }, state.host === 'fuera' ? 'Solo lectura' : state.host === 'error' ? 'Sin Host' : 'Conectando…');
     replace(header,
-      h('a', { class: 'brand', href: '#/' }, h('span', { class: 'logo', 'aria-hidden': 'true' }), 'CampusChain'),
+      h('a', { class: 'brand', href: '#/' }, logo(), 'CampusChain'),
       account,
     );
     const notice = !isContractConfigured()

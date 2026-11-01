@@ -56,6 +56,11 @@ describe('colores de styles.css', () => {
     expect(areas.some((a) => /main side|banner side/.test(a))).toBe(false);
   });
 
+  it('la cuadrícula con menú solo aplica a la app montada, no al registro ni a la carga', () => {
+    expect(css).toMatch(/#app\.marco\s*\{[^}]*display:\s*grid/);
+    expect(css).not.toMatch(/#app\s*\{[^}]*display:\s*grid/);
+  });
+
   it('la fuente es Plus Jakarta Sans, desde un archivo del bundle', () => {
     expect(css).toMatch(/--font:\s*"Plus Jakarta Sans"/);
     expect(css).toMatch(/url\("\.\/fonts\/plus-jakarta-sans-[\w-]+\.woff2"\)/);
