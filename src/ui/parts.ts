@@ -47,12 +47,12 @@ export function reputationBlock(r: Reputacion): HTMLElement {
 export const loading = (text = 'Leyendo de la blockchain…') => h('div', { class: 'loading' }, h('span', { class: 'spinner' }), text);
 
 /** Logo de CampusChain (va en el bundle). Decorativo: junto a él siempre va el nombre. */
-export const logo = () => h('img', { class: 'logo', src: logoUrl, alt: '', width: 32, height: 32, decoding: 'async' });
+export const logo = () => h('img', { class: 'logo', src: logoUrl, alt: '', width: 46, height: 30, decoding: 'async' });
 
 /** Pantalla completa mientras arranca la app (revisar la sesión): logo, nombre y barra de avance. */
 export const pantallaCarga = (text: string) =>
   h('div', { class: 'arranque', role: 'status', 'aria-live': 'polite' },
-    h('img', { class: 'arranque-logo', src: logoUrl, alt: '', width: 112, height: 112 }),
+    h('img', { class: 'arranque-logo', src: logoUrl, alt: '', width: 172, height: 112 }),
     h('p', { class: 'arranque-nombre' }, 'CampusChain'),
     h('div', { class: 'arranque-barra', 'aria-hidden': 'true' }, h('span')),
     h('p', { class: 'arranque-texto' }, text),
