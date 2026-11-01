@@ -28,7 +28,7 @@ export async function catalogPage(ctx: Ctx): Promise<HTMLElement> {
     ),
     h('h3', null, p.titulo),
     p.descripcion ? h('p', { class: 'muted clamp' }, p.descripcion) : null,
-    h('p', { class: 'small' }, '📍 ', p.puntoEntrega),
+    h('p', { class: 'small' }, p.puntoEntrega),
     h('p', { class: 'small muted' }, 'Vendedor · ', lineaReputacion(stats.get(p.vendedor.toLowerCase())!)),
   );
 
@@ -103,7 +103,7 @@ export async function productPage(ctx: Ctx, id: string): Promise<HTMLElement> {
   };
 
   return h('div', null,
-    h('a', { class: 'back', href: '#/' }, '← Catálogo'),
+    h('a', { class: 'back', href: '#/' }, 'Catálogo'),
     h('div', { class: 'card ficha' },
       h('div', { class: 'product-top' },
         h('span', { class: 'chip' }, p.categoria || 'Otro'),
@@ -112,7 +112,7 @@ export async function productPage(ctx: Ctx, id: string): Promise<HTMLElement> {
       h('h1', null, p.titulo),
       p.descripcion ? h('p', null, p.descripcion) : null,
       h('p', { class: 'price big' }, precio(p)),
-      h('p', null, '📍 Punto de entrega: ', h('strong', null, p.puntoEntrega)),
+      h('p', null, 'Punto de entrega: ', h('strong', null, p.puntoEntrega)),
       h('p', { class: 'muted small' }, `Producto #${p.id} · registrado en el contrato`),
     ),
     h('div', { class: 'card vendedor-card' },
@@ -139,7 +139,7 @@ export async function productPage(ctx: Ctx, id: string): Promise<HTMLElement> {
             h('button', { class: 'btn btn-round', type: 'button', 'aria-label': 'Más', onclick: () => setQty(quantity + 1) }, '+'),
             h('span', { class: 'muted' }, 'Total: '), total,
           ),
-          h('p', { class: 'note' }, '💵 Pagas directo al vendedor en efectivo o transferencia, fuera de la app. CampusChain registra el pedido y cada paso, no el dinero.'),
+          h('p', { class: 'note' }, 'Pagas directo al vendedor en efectivo o transferencia, fuera de la app. CampusChain registra el pedido y cada paso, no el dinero.'),
           h('button', { class: 'btn btn-primary btn-block', onclick: order }, 'Hacer pedido'),
         )
         : h('div', { class: 'card compra' }, h('p', null, 'El vendedor pausó este producto por ahora.')),

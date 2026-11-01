@@ -42,7 +42,7 @@ export function authPage(listo: (user: User) => void): HTMLElement {
       h('button', { class: `btn${modo === m ? ' btn-primary' : ''}`, type: 'button', onclick: () => { modo = m; draw(); } }, texto);
 
     replace(root,
-      h('div', { class: 'brand' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, '✓'), 'CampusChain'),
+      h('div', { class: 'brand' }, h('span', { class: 'logo', 'aria-hidden': 'true' }), 'CampusChain'),
       h('div', { class: 'card' },
         h('div', { class: 'auth-tabs' }, pestana('entrar', 'Iniciar sesión'), pestana('registro', 'Registrarme')),
         h('form', { class: 'form', onsubmit: submit },

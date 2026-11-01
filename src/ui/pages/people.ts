@@ -11,7 +11,7 @@ export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
   const [rep, available] = await Promise.all([ctx.data.reputacion(address), ctx.data.productosDe(address)]);
   const isMe = ctx.me !== null && address.toLowerCase() === ctx.me.toLowerCase();
   return h('div', null,
-    h('a', { class: 'back', href: '#/' }, '← Catálogo'),
+    h('a', { class: 'back', href: '#/' }, 'Catálogo'),
     h('div', { class: 'card perfil' },
       h('h1', { class: 'mono' }, shortAddress(address), isMe ? ' (tú)' : ''),
       h('p', { class: 'small' }, external(explorerAddress(address), 'Ver en el explorador')),
@@ -22,7 +22,7 @@ export async function sellerPage(ctx: Ctx, address: Hex): Promise<HTMLElement> {
     ),
     bloque('disponibles', 'Productos disponibles', available.length
       ? h('div', { class: 'list' }, ...available.map((p) => h('a', { class: 'card row', href: `#/p/${p.id}` },
-        h('div', { class: 'row-main' }, h('strong', null, p.titulo), h('span', { class: 'muted small' }, `📍 ${p.puntoEntrega}`)),
+        h('div', { class: 'row-main' }, h('strong', null, p.titulo), h('span', { class: 'muted small' }, p.puntoEntrega)),
         h('div', { class: 'row-side' }, h('strong', null, formatMxn(BigInt(p.precioCentavos)))))))
       : empty('No tiene productos disponibles.')),
   );
@@ -62,7 +62,7 @@ export async function accountPage(ctx: Ctx): Promise<HTMLElement> {
       h('p', { class: 'small muted' }, 'Tu cuenta en esta app (SS58):'),
       h('p', { class: 'mono small break' }, ss58),
       h('p', null, copyButton(ss58, 'Copiar dirección SS58')),
-      h('p', { class: 'note' }, '💧 Publicar productos y hacer pedidos guarda datos en el contrato, y eso pide un depósito en PAS aparte del gas. Si te sale «no tiene PAS para el depósito», pega esta dirección en faucet.polkadot.io (Paseo → Asset Hub).'),
+      h('p', { class: 'note' }, 'Publicar productos y hacer pedidos guarda datos en el contrato, y eso pide un depósito en PAS aparte del gas. Si te sale «no tiene PAS para el depósito», pega esta dirección en faucet.polkadot.io (Paseo → Asset Hub).'),
     ),
     h('div', { class: 'card cartera' },
       h('p', { class: 'small muted' }, 'La misma cuenta en el contrato (H160):'),

@@ -98,8 +98,8 @@ export async function orderPage(ctx: Ctx, id: Direccion): Promise<HTMLElement> {
       const { coincide, hash } = await ctx.data.verificarPedido(o.orderId);
       replace(verifyOut,
         h('p', { class: coincide ? 'ok' : 'bad' }, coincide
-          ? '✓ El hash coincide: los datos de este pedido son los que se registraron al crearlo.'
-          : '✗ El hash NO coincide con estos datos. Si el pedido se creó desde otra app, puede que calcule el hash de otra forma.'),
+          ? 'El hash coincide: los datos de este pedido son los que se registraron al crearlo.'
+          : 'El hash NO coincide con estos datos. Si el pedido se creó desde otra app, puede que calcule el hash de otra forma.'),
         h('p', { class: 'mono small break' }, hash),
       );
     } catch (error) {
@@ -109,7 +109,7 @@ export async function orderPage(ctx: Ctx, id: Direccion): Promise<HTMLElement> {
   };
 
   return h('div', null,
-    h('a', { class: 'back', href: ctx.me && o.vendedor.toLowerCase() === ctx.me.toLowerCase() ? '#/vender' : '#/pedidos' }, '← Pedidos'),
+    h('a', { class: 'back', href: ctx.me && o.vendedor.toLowerCase() === ctx.me.toLowerCase() ? '#/vender' : '#/pedidos' }, 'Pedidos'),
     h('div', { class: 'card resumen' },
       h('div', { class: 'product-top' }, h('span', { class: 'muted mono' }, orderLabel(o.orderId)), estadoBadge(o.estado)),
       h('h1', null, h('a', { href: `#/p/${producto.id}` }, producto.titulo)),
@@ -117,12 +117,12 @@ export async function orderPage(ctx: Ctx, id: Direccion): Promise<HTMLElement> {
       h('dl', { class: 'facts' },
         h('dt', null, 'Cantidad'), h('dd', null, `${o.cantidad} × ${unitario(o)}`),
         h('dt', null, 'Total'), h('dd', null, h('strong', null, formatMxn(BigInt(o.totalCentavos)))),
-        h('dt', null, 'Entrega'), h('dd', null, `📍 ${producto.puntoEntrega}`),
+        h('dt', null, 'Entrega'), h('dd', null, producto.puntoEntrega),
         h('dt', null, 'Comprador'), h('dd', null, who(o.comprador)),
         h('dt', null, 'Vendedor'), h('dd', null, who(o.vendedor)),
       ),
       ['pago-reportado', 'entregado', 'completado'].includes(o.estado)
-        ? h('p', { class: 'note' }, 'ℹ️ «Pago reportado» es una declaración firmada por el vendedor. La blockchain registra quién la hizo y cuándo; no verifica el banco ni el efectivo.')
+        ? h('p', { class: 'note' }, '«Pago reportado» es una declaración firmada por el vendedor. La blockchain registra quién la hizo y cuándo; no verifica el banco ni el efectivo.')
         : null,
     ),
     actionCard,

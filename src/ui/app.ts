@@ -96,12 +96,12 @@ export function mountApp(root: HTMLElement, hub: Hub, source: CampusData, usuari
   const drawChrome = (state: HubState) => {
     const r = route(location.hash);
     const account = state.account
-      ? h('a', { class: 'account on', href: '#/cuenta' }, '● ', shortAddress(state.account.h160))
+      ? h('a', { class: 'account on', href: '#/cuenta' }, shortAddress(state.account.h160))
       : state.host === 'listo'
         ? h('button', { class: 'btn btn-small btn-primary', onclick: () => void ensureAccount() }, 'Conectar')
         : h('span', { class: 'account muted small' }, state.host === 'fuera' ? 'Solo lectura' : state.host === 'error' ? 'Sin Host' : 'Conectando…');
     replace(header,
-      h('a', { class: 'brand', href: '#/' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, '✓'), 'CampusChain'),
+      h('a', { class: 'brand', href: '#/' }, h('span', { class: 'logo', 'aria-hidden': 'true' }), 'CampusChain'),
       account,
     );
     const notice = !isContractConfigured()

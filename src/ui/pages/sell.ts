@@ -37,7 +37,7 @@ function productRow(ctx: Ctx, p: Producto): HTMLElement {
   return h('div', { class: 'card row' },
     h('a', { class: 'row-main', href: `#/p/${p.id}` },
       h('strong', null, p.titulo),
-      h('span', { class: 'muted small' }, `${formatMxn(BigInt(p.precioCentavos))} · ${p.categoria || 'Otro'} · 📍 ${p.puntoEntrega}`),
+      h('span', { class: 'muted small' }, `${formatMxn(BigInt(p.precioCentavos))} · ${p.categoria || 'Otro'} · ${p.puntoEntrega}`),
     ),
     h('div', { class: 'row-side' },
       p.disponible ? h('span', { class: 'badge badge-ok' }, 'Disponible') : h('span', { class: 'badge badge-off' }, 'Pausado'),
