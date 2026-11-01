@@ -39,7 +39,7 @@ export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () =
     hub.dismiss();
     draw();
   });
-  root.replaceChildren(header, banner, main, nav, toastEl, popup.el);
+  root.replaceChildren(h('div', { class: 'chrome' }, header, nav), banner, main, toastEl, popup.el);
 
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   const toast: Ctx['toast'] = (message, tone = 'ok') => {
@@ -107,10 +107,37 @@ export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () =
     );
   };
 
+  /** Paso 2 del acceso: después del login hay que conectar la cuenta de Polkadot y aprobar en el Host. */
+  const connectGate = (state: HubState): HTMLElement => {
+    const waiting = state.host === 'buscando' || state.host === 'conectando';
+    const action = state.host === 'listo'
+      ? h('button', { class: 'btn btn-primary btn-block', disabled: state.busy, onclick: () => void ensureAccount() }, state.busy ? 'Esperando tu aprobación…' : 'Conectar con Polkadot')
+      : state.host === 'fuera' || state.host === 'error'
+        ? h('button', { class: 'btn btn-block', onclick: () => void hub.start() }, 'Reintentar')
+        : null;
+    return h('div', { class: 'auth' },
+      h('div', { class: 'card' },
+        h('h1', null, 'Conecta tu cuenta'),
+        h('p', null, `Sesión iniciada como ${usuario.email ?? ''}.`),
+        h('p', { class: 'muted small' }, 'Para entrar al marketplace conecta tu cuenta de la Polkadot App y aprueba los permisos en tu celular o en Polkadot Desktop.'),
+        waiting ? loading(state.message) : state.host === 'listo' ? null : h('p', { class: 'bad small' }, state.message),
+        action,
+        h('p', null, h('button', { class: 'btn btn-small', type: 'button', onclick: salir }, 'Cerrar sesión')),
+      ),
+    );
+  };
+
   let drawing = 0;
   async function draw() {
     const ticket = ++drawing;
-    drawChrome(hub.getState());
+    const state = hub.getState();
+    drawChrome(state);
+    // Sin cuenta de Polkadot conectada no se ve ninguna pantalla.
+    nav.hidden = !state.account;
+    if (!state.account) {
+      replace(main, connectGate(state));
+      return;
+    }
     const r = route(location.hash);
     replace(main, loading());
     if (!isContractConfigured()) {
@@ -135,6 +162,9 @@ export function mountApp(root: HTMLElement, hub: Hub, usuario: User, salir: () =
     if (now !== lastAccount) {
       lastAccount = now;
       if (!state.busy) void draw();
+    } else if (!now) {
+      // La pantalla de conectar sigue al Host (buscando → listo, esperando aprobación…).
+      void draw();
     }
   });
 
