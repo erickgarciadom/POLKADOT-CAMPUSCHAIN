@@ -37,7 +37,16 @@ export const PRODUCTOS: Producto[] = [
   producto(4, YO, 'Galletas de avena', 2500, 'Comida', { descripcion: 'Paquete de 6.' }),
   producto(5, ANA, 'Calculadora científica', 30000, 'Escolar', { disponible: false }),
   producto(6, YO, 'Llavero de la facultad', 4000, 'Accesorios', { disponible: false }),
+  producto(7, YO, 'Sudadera de la Facultad de Ingeniería', 45000, 'Ropa', { descripcion: 'Bordada, tallas S a XL.', puntoEntrega: 'Facultad de Ingeniería' }),
+  producto(8, YO, 'Kit de útiles para inicio de semestre', 18000, 'Escolar', { descripcion: 'Cuadernos, plumas y calculadora básica.', puntoEntrega: 'Biblioteca' }),
 ];
+
+/** Segundos de una fecha del último agosto o enero ya pasados: los picos de inicio de semestre. */
+const ultimo = (mes: number, dia: number, hora: number) => {
+  const hoy = new Date();
+  const anio = hoy.getMonth() >= mes ? hoy.getFullYear() : hoy.getFullYear() - 1;
+  return Math.floor(new Date(anio, mes, dia, hora).getTime() / 1000);
+};
 
 const id = (n: number) => `0x${n.toString(16).padStart(64, '0')}` as Direccion;
 
@@ -69,6 +78,13 @@ export const ORDENES: Orden[] = [
   orden(5, 3, LUIS, YO, 1, 'completado', haceDias(70)),
   orden(6, 4, ANA, YO, 2, 'creado', haceDias(0)),
   orden(7, 4, LUIS, YO, 1, 'cancelado', haceDias(5)),
+  // Inicio de semestre: agosto y enero concentran las ventas de sudaderas y útiles.
+  orden(8, 7, ANA, YO, 1, 'completado', ultimo(7, 8, 11)),
+  orden(9, 7, LUIS, YO, 2, 'completado', ultimo(7, 9, 12)),
+  orden(10, 8, ANA, YO, 1, 'completado', ultimo(7, 12, 11)),
+  orden(11, 8, LUIS, YO, 3, 'completado', ultimo(0, 13, 10)),
+  orden(12, 7, ANA, YO, 1, 'completado', ultimo(0, 15, 11)),
+  orden(13, 7, LUIS, YO, 1, 'aceptado', haceDias(1)),
 ];
 
 const CAMINO: Orden['estado'][] = ['creado', 'aceptado', 'pago-reportado', 'entregado', 'completado'];

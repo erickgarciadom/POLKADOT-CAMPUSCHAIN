@@ -98,6 +98,56 @@ export interface ReporteVentas {
   ventas: Venta[];
 }
 
+/**
+ * Métricas de la tienda del vendedor (skill «metricas-ecommerce-universidad»), en JSON descargable.
+ * Solo con datos reales del contrato. Lo que la app no registra (visitas, carrito, stock) va en
+ * null y lo explica `notas`: nada se inventa.
+ */
+export interface MetricasTienda {
+  periodo: {
+    /** ISO 8601. */
+    generado: string;
+    /** «2026-2» = agosto–diciembre, «2026-1» = enero–junio (julio cuenta como verano, en el 1). */
+    semestre: string;
+    ventana_activos_dias: number;
+  };
+  metricas_financieras: {
+    ingresos_totales_centavos: string;
+    ingresos_semestre_centavos: string;
+    pedidos_completados: number;
+    /** AOV: ingresos / pedidos completados. */
+    ticket_promedio_centavos: string | null;
+    /** Pedidos completados / pedidos recibidos, en %. */
+    tasa_conversion_pedidos_pct: number | null;
+    /** Visitas → compra: la app no registra visitas. */
+    tasa_conversion_visitas_pct: null;
+  };
+  comportamiento_usuarios: {
+    /** Compradores distintos con un pedido en las últimas 24 h / 30 días. */
+    compradores_activos_dia: number;
+    compradores_activos_mes: number;
+    compradores_recurrentes: number;
+    /** Pedidos cancelados por el comprador / recibidos, en %. Lo más cercano al abandono. */
+    tasa_cancelacion_pct: number | null;
+    /** No hay carrito en la app. */
+    tasa_abandono_carrito_pct: null;
+    /** Hora local (0–23) con más pedidos, de mayor a menor. */
+    horas_pico: { hora: number; pedidos: number }[];
+    /** 0 = domingo. */
+    dias_pico: { dia: number; pedidos: number }[];
+    /** 0 = enero. Picos esperados: agosto y enero (inicio de semestre). */
+    meses_pico: { mes: number; pedidos: number }[];
+  };
+  inventario_producto: {
+    mas_vendidos: { producto_id: string; titulo: string; categoria: string; piezas: number; ingresos_centavos: string }[];
+    productos_activos: number;
+    productos_pausados: number;
+    /** El contrato no guarda stock: sin datos no hay alertas. */
+    alertas_bajo_inventario: { producto_id: string; titulo: string; stock: number }[] | null;
+  };
+  notas: string[];
+}
+
 /** Lo que llena el vendedor en «Publicar producto». */
 export interface NuevoProducto {
   titulo: string;
