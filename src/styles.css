@@ -132,6 +132,11 @@ p { margin: 0.35rem 0; }
 .bar-track { height: 120px; width: 100%; max-width: 28px; display: flex; align-items: flex-end; }
 .bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; }
 
+/* KPIs de «Mis ventas»: ranking de más vendidos y el JSON descargable. */
+.ranking { margin: 8px 0; padding-left: 1.4rem; }
+.ranking li { margin: 4px 0; }
+.json { font-size: 0.72rem; max-height: 320px; overflow: auto; white-space: pre; }
+
 /* Pantalla de registro e inicio de sesión. */
 .auth { max-width: 420px; margin: 24px auto; }
 .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }

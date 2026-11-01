@@ -3,6 +3,7 @@
  * que simula antes de firmar y muestra el popup) y los productos borrados en Firebase.
  */
 import { computeOrderHash, newOrderId, type Hex, type Order, type Product } from '../contract/campuschain';
+import { FIRST_VISIBLE_PRODUCT } from '../contract/config';
 import { readStatusTxHashes, rememberTxHash } from '../contract/txHashes';
 import { marcarBorrado, productosBorrados } from '../firebase/borrados';
 import type { Hub, Result } from '../hub/hub';
@@ -10,7 +11,8 @@ import { esCompletado, ventaDe } from '../lib/sales';
 import type { CampusData } from '../shared/datasource';
 import { estadoDesdeStatus, etiquetaEstado, FUNCION_DE, opcionesPedido, statusDesdeEstado } from '../shared/estados';
 import type { Direccion, EstadoOrden, Resultado, Sesion, Venta } from '../shared/types';
-import { ordenDesde, pasoDesde, productoDesde, reporteDesde, reputacionDesde } from './adapters';
+import { esVisible, ordenDesde, pasoDesde, productoDesde, reporteDesde, reputacionDesde } from './adapters';
+import { metricasDesde } from './metricas';
 
 const NO_ACCOUNT: Resultado = { ok: false, message: 'Conecta tu cuenta primero.' };
 
@@ -31,9 +33,29 @@ export function createRealSource(hub: Hub, sesion: Sesion): CampusData {
     const t = await titulos(orders);
     return orders.map((o) => ordenDesde(o, t.get(o.productId.toString()) ?? `Producto #${o.productId}`));
   };
-  const nuevos = (list: Product[]) => [...list].reverse().map(productoDesde);
+  /** Mis pedidos completados como vendedor, con la fecha del paso «Completado». */
+  const misVentas = async (): Promise<Venta[]> => {
+    const me = yo();
+    if (!me) return [];
+    const completados = (await reads.sellerOrders(me)).filter(esCompletado);
+    const t = await titulos(completados);
+    return Promise.all(completados.map(async (o) => {
+      const v = ventaDe(o, await reads.history(o.id));
+      return {
+        orderId: o.id,
+        productoId: o.productId.toString(),
+        tituloProducto: t.get(o.productId.toString()) ?? `Producto #${o.productId}`,
+        cantidad: v.quantity,
+        totalCentavos: v.totalCents.toString(),
+        completadoEn: v.completadoEn,
+      };
+    }));
+  };
 
-  return {
+  // Los productos de antes de FIRST_VISIBLE_PRODUCT ya no se muestran en las listas.
+  const nuevos = (list: Product[]) => list.filter((p) => esVisible(p.id, FIRST_VISIBLE_PRODUCT)).reverse().map(productoDesde);
+
+  const fuente: CampusData = {
     async catalogo() {
       return nuevos((await reads.products()).filter((p) => p.available));
     },
@@ -83,22 +105,13 @@ export function createRealSource(hub: Hub, sesion: Sesion): CampusData {
       return { coincide: await reads.verifyHash(orderId, hash), hash };
     },
     async reporteVentas(ahora) {
+      return reporteDesde(await misVentas(), ahora);
+    },
+    async metricas(ahora) {
       const me = yo();
-      if (!me) return reporteDesde([], ahora);
-      const completados = (await reads.sellerOrders(me)).filter(esCompletado);
-      const t = await titulos(completados);
-      const ventas: Venta[] = await Promise.all(completados.map(async (o) => {
-        const v = ventaDe(o, await reads.history(o.id));
-        return {
-          orderId: o.id,
-          productoId: o.productId.toString(),
-          tituloProducto: t.get(o.productId.toString()) ?? `Producto #${o.productId}`,
-          cantidad: v.quantity,
-          totalCentavos: v.totalCents.toString(),
-          completadoEn: v.completadoEn,
-        };
-      }));
-      return reporteDesde(ventas, ahora);
+      if (!me) return metricasDesde({ recibidos: [], ventas: [], productos: [] }, ahora);
+      const [recibidos, ventas, productos] = await Promise.all([fuente.pedidosRecibidos(), misVentas(), fuente.misProductos()]);
+      return metricasDesde({ recibidos, ventas, productos }, ahora);
     },
 
     async publicarProducto(n) {
@@ -188,4 +201,5 @@ export function createRealSource(hub: Hub, sesion: Sesion): CampusData {
       return resultado(r);
     },
   };
+  return fuente;
 }

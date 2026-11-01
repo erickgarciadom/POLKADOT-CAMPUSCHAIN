@@ -8,6 +8,9 @@ import { porMes, porPeriodo, resumir, type Resumen, type Venta as VentaLib } fro
 import { estadoDesdeStatus, resumenDe } from '../shared/estados';
 import type { Orden, Paso, Producto, ReporteVentas, Reputacion, ResumenPeriodo, Venta } from '../shared/types';
 
+/** ¿La app muestra este producto en sus listas? Los anteriores a `primero` quedan ocultos. */
+export const esVisible = (id: bigint, primero: bigint) => id >= primero;
+
 export function productoDesde(p: Product): Producto {
   return {
     id: p.id.toString(),

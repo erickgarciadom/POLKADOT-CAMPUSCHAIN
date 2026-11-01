@@ -17,4 +17,11 @@ export const RPC_TIMEOUT_MS = 8_000;
 export const MAX_ITEMS_READ = 300;
 export const READ_PARALLEL = 8;
 
+/**
+ * Primer producto que muestra la app. El contrato no borra productos: los de prueba (1 a 4, del
+ * 2026-10-31) siguen en la cadena pero ya no aparecen en el catálogo, perfiles ni «Mis productos».
+ * Los pedidos viejos que los mencionan se siguen viendo. Pon 1 para volver a mostrar todos.
+ */
+export const FIRST_VISIBLE_PRODUCT = 5n;
+
 export const isContractConfigured = () => !/^0x0{40}$/i.test(CAMPUSCHAIN_ADDRESS);
